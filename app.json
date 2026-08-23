@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "FloodSense",
+    "slug": "floodsense",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#0D3B5E"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.floodsense.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0D3B5E"
+      },
+      "package": "com.floodsense.app"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-web-browser"
+    ],
+    "scheme": "floodsense",
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
