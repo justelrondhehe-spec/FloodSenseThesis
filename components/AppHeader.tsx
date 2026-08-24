@@ -53,7 +53,7 @@ export default function AppHeader({ showBadge = true }: AppHeaderProps) {
   };
 
   const notifications = [
-    { id: '1', icon: 'alert-triangle', color: Colors.orange, title: 'Water Level Rising', desc: 'Level reached 1.8m in Barangay 659', time: '2 mins ago' },
+    { id: '1', icon: 'alert-triangle', color: Colors.orange, title: 'Water Level Rising', desc: 'Level reached 1.8m in Barangay Pulanglupa Uno', time: '2 mins ago' },
     { id: '2', icon: 'alert-circle', color: '#C0392B', title: 'Flood Warning Issued', desc: 'Moderate flooding expected in low-lying areas', time: '15 mins ago' },
     { id: '3', icon: 'check-circle', color: Colors.teal, title: 'Sensor Online', desc: 'All IoT sensors reporting normally', time: '1 hour ago' },
   ];
@@ -69,7 +69,7 @@ export default function AppHeader({ showBadge = true }: AppHeaderProps) {
           <View>
             <Text style={styles.appName}>FloodSense</Text>
             <Text style={styles.appSub}>
-              <Text style={{ color: Colors.teal }}>BARANGAY 659</Text>{' '}· LIVE
+              <Text style={{ color: Colors.teal }}>BARANGAY Pulanglupa Uno</Text>{' '}· LIVE
             </Text>
           </View>
         </View>

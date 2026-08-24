@@ -1,6 +1,6 @@
 # 🌊 FloodSense
 
-A community-based flood monitoring, emergency response, and evacuation routing mobile app built specifically for **Barangay 659, Manila**.
+A community-based flood monitoring, emergency response, and evacuation routing mobile app built specifically for **Barangay Pulanglupa Uno, Las Pinas City**.
 Built with **Expo + React Native + TypeScript** and powered by **Firebase** for real-time IoT sensor data and authentication.
 
 ---

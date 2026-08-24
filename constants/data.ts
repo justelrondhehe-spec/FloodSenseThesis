@@ -9,7 +9,7 @@ export const floodData = {
   windSpeed: 18,
   windDirection: 'northeast',
   lastUpdated: '08:43 AM',
-  barangay: 'BARANGAY 659',
+  barangay: 'BARANGAY Pulanglupa Uno',
   status: 'LIVE',
 };
 
@@ -54,7 +54,7 @@ export const emergencyContacts = [
   },
   {
     id: '2',
-    name: 'Barangay 659 Office',
+    name: 'Barangay Pulanglupa Uno Office',
     subtitle: 'Local Government Unit',
     number: '(02) 8123-4567',
     icon: 'home',
@@ -76,7 +76,7 @@ export const emergencyContacts = [
   {
     id: '5',
     name: 'Local Rescue Team',
-    subtitle: 'Barangay 659 Response',
+    subtitle: 'Barangay Pulanglupa Uno Response',
     number: '(02) 8555-0100',
     icon: 'alert-circle',
   },
