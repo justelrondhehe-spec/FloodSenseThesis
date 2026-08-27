@@ -167,7 +167,9 @@ export default function MapScreen() {
         return;
       }
 
-      const location = await Location.getCurrentPositionAsync({});
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
       setUserLocation({
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
@@ -352,7 +354,7 @@ export default function MapScreen() {
       </View>
 
       <View style={styles.mapLabel}>
-        <Text style={styles.mapLabelText}>Brgy 659 - Manila</Text>
+        <Text style={styles.mapLabelText}>Brgy Pamplona Tres - Las Piñas</Text>
       </View>
 
       {!fullscreen && (

@@ -332,7 +332,7 @@ export default function HomeScreen() {
               <Text style={styles.distanceSub}>{displayTime}</Text>
             </View>
             <View style={styles.locationLabel}>
-              <Text style={styles.locationLabelText}>{activeRoute ? 'To ' + activeRoute.name : 'Brgy 659 - Manila'}</Text>
+              <Text style={styles.locationLabelText}>{activeRoute ? 'To ' + activeRoute.name : 'Brgy Pamplona Tres - Las Piñas'}</Text>
             </View>
           </View>
 
