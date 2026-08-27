@@ -5,14 +5,18 @@ import { getDatabase } from 'firebase/database'; // Added for sensors!
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  databaseURL: process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL,
-  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+  apiKey: "AIzaSyAouuy2ANmlXuz72OACyZqglYyg93buTEA",
+  authDomain: "floodsensethesis.firebaseapp.com",
+  projectId: "floodsensethesis",
+  storageBucket: "floodsensethesis.firebasestorage.app",
+  messagingSenderId: "698419096569",
+  appId: "1:698419096569:web:6cf5607fe52953d1e7eb28",
+  measurementId: "G-S0948R42Z2"
 };
+
+console.log("=== FIREBASE KEY CHECK ===");
+console.log(firebaseConfig.apiKey);
+console.log("==========================");
 
 const app = initializeApp(firebaseConfig);
 
@@ -23,4 +27,4 @@ export const auth = initializeAuth(app, {
 
 // Initialize and export the Realtime Database for your sensor widget
 export const db = getDatabase(app);
-export const firestore = getFirestore(app);
+export const firestore = getFirestore(app); 
