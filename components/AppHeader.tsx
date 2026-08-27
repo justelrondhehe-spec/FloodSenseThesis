@@ -53,7 +53,7 @@ export default function AppHeader({ showBadge = true }: AppHeaderProps) {
   };
 
   const notifications = [
-    { id: '1', icon: 'alert-triangle', color: Colors.orange, title: 'Water Level Rising', desc: 'Level reached 1.8m in Barangay Pulanglupa Uno', time: '2 mins ago' },
+    { id: '1', icon: 'alert-triangle', color: Colors.orange, title: 'Water Level Rising', desc: 'Level reached 1.8m in Barangay Pamplona Tres', time: '2 mins ago' },
     { id: '2', icon: 'alert-circle', color: '#C0392B', title: 'Flood Warning Issued', desc: 'Moderate flooding expected in low-lying areas', time: '15 mins ago' },
     { id: '3', icon: 'check-circle', color: Colors.teal, title: 'Sensor Online', desc: 'All IoT sensors reporting normally', time: '1 hour ago' },
   ];
@@ -69,7 +69,7 @@ export default function AppHeader({ showBadge = true }: AppHeaderProps) {
           <View>
             <Text style={styles.appName}>FloodSense</Text>
             <Text style={styles.appSub}>
-              <Text style={{ color: Colors.teal }}>BARANGAY Pulanglupa Uno</Text>{' '}· LIVE
+              <Text style={{ color: Colors.teal }}>BARANGAY Pamplona Tres</Text>{' '}· LIVE
             </Text>
           </View>
         </View>
@@ -262,7 +262,7 @@ export default function AppHeader({ showBadge = true }: AppHeaderProps) {
                   <Feather name="map-pin" size={18} color={Colors.teal} />
                   <Text style={[styles.settingText, { color: titleColor, fontSize: Fonts.sizes.sm * fontSizeScale }]}>Barangay</Text>
                 </View>
-                <Text style={[styles.settingValue, { color: subtitleColor }]}>659</Text>
+                <Text style={[styles.settingValue, { color: subtitleColor }]}>Pamplona Tres</Text>
               </View>
 
               {/* ── ADD ACCOUNT / LOGOUT HERE ── */}

@@ -9,7 +9,7 @@ export const floodData = {
   windSpeed: 18,
   windDirection: 'northeast',
   lastUpdated: '08:43 AM',
-  barangay: 'BARANGAY Pulanglupa Uno',
+  barangay: 'BARANGAY Pamplona Tres',
   status: 'LIVE',
 };
 
@@ -54,7 +54,7 @@ export const emergencyContacts = [
   },
   {
     id: '2',
-    name: 'Barangay Pulanglupa Uno Office',
+    name: 'Barangay Pamplona Tres Office',
     subtitle: 'Local Government Unit',
     number: '(02) 8123-4567',
     icon: 'home',
@@ -76,7 +76,7 @@ export const emergencyContacts = [
   {
     id: '5',
     name: 'Local Rescue Team',
-    subtitle: 'Barangay Pulanglupa Uno Response',
+    subtitle: 'Barangay Pamplona Tres Response',
     number: '(02) 8555-0100',
     icon: 'alert-circle',
   },
