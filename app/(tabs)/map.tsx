@@ -95,20 +95,24 @@ interface EvacArea {
 
 const EVAC_AREAS: EvacArea[] = [
   {
-    name: 'SM City Manila',
-    coordinate: { latitude: 14.589856887783418, longitude: 120.98314042065157 }, 
+    name: 'Verdant Court',
+    coordinate: { latitude: 14.454110746204451, longitude: 120.98066721425005 },
   },
   {
-    name: 'PNU Gymnasium',
-    coordinate: { latitude: 14.58836845294668, longitude: 120.98263528399174 },
+    name: 'Rayville Court',
+    coordinate: { latitude: 14.457197537025898, longitude: 120.9810627816938 },
   },
   {
-    name: 'YMCA of Manila',
-    coordinate: { latitude: 14.588845283492326, longitude: 120.98254227148138 }, 
+    name: 'Camella IV Court',
+    coordinate: { latitude: 14.457402635001243, longitude: 120.9845678458565 },
   },
   {
-    name: 'Maceda Building',
-    coordinate: { latitude: 14.587614491989854, longitude: 120.9827890805987 }, 
+    name: 'Camella 3C Court',
+    coordinate: { latitude: 14.45693070132432, longitude: 120.98673503822802 },
+  },
+  {
+    name: 'Manuela 4B Court',
+    coordinate: { latitude: 14.45569782417187, longitude: 120.98859939233947 },
   },
 ];
 
