@@ -7,8 +7,7 @@ import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Spacing, Fonts } from '../constants/theme';
 import { useTheme } from '../constants/ThemeContext';
-import { signOut } from 'firebase/auth';
-import { auth } from '../constants/firebase';
+import { supabase } from '../constants/supabase';
 
 type AppHeaderProps = {
   showBadge?: boolean;
@@ -33,7 +32,8 @@ export default function AppHeader({ showBadge = true }: AppHeaderProps) {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
       setSettingsVisible(false); // Close the sheet as they log out
     } catch (error) {
       console.error('Error signing out: ', error);

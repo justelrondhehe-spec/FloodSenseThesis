@@ -1,7 +1,10 @@
 import * as Location from 'expo-location';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, Alert } from 'react-native';
-import MapView, { Marker, Polyline, Circle, UrlTile, PROVIDER_DEFAULT } from 'react-native-maps';
+import { MapSurface, Marker, Polyline, Circle, UrlTile } from '../../components/MapPrimitives';
+import LeafletMap from '../../components/LeafletMap';
+import { buildLeafletData } from '../../components/leafletHtml';
+import { findEvacuationRoute } from '../../constants/routing';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,10 +12,6 @@ import AppHeader from '../../components/AppHeader';
 import { Colors, Spacing, Radius, Fonts } from '../../constants/theme';
 import { alerts as initialAlerts } from '../../constants/data'; // Renamed to initialAlerts
 import { useTheme } from '../../constants/ThemeContext';
-
-// --- FIREBASE ---
-import { ref, onValue } from 'firebase/database';
-import { db } from '../../constants/firebase';
 
 // ---------------------------------------------------------------------------
 // Types & Map Layers
@@ -30,14 +29,18 @@ interface MapLayer {
 }
 
 const MAP_LAYERS: MapLayer[] = [
-  { key: 'street', label: 'Street', icon: 'map', description: 'Standard street map', tileUrl: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png' },
+  { key: 'street', label: 'Street', icon: 'map', description: 'Standard street map', tileUrl: '' },
   { key: 'satellite', label: 'Satellite', icon: 'globe', description: 'Aerial/satellite imagery', tileUrl: '', nativeSatellite: true },
   { key: 'terrain', label: 'Terrain', icon: 'triangle', description: 'Elevation & contours', tileUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}' },
   { key: 'cycle', label: 'Cycle', icon: 'wind', description: 'Cycling routes', baseUrl: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', tileUrl: 'https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png' },
   { key: 'transport', label: 'Transport', icon: 'truck', description: 'Transit & transport network', tileUrl: 'https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png' },
 ];
 
-const FLOOD_LOCATION = { latitude: 14.5965, longitude: 120.9820 };
+const FLOOD_LOCATIONS = [
+  { latitude: 14.456889476749904, longitude: 120.98302513245899 },
+  { latitude: 14.454809976368963, longitude: 120.983746010595 },
+];
+const FLOOD_RADIUS_METERS = 130;
 
 interface EvacArea {
   name: string;
@@ -45,25 +48,16 @@ interface EvacArea {
 }
 
 const EVAC_AREAS: EvacArea[] = [
-  { name: 'SM City Manila', coordinate: { latitude: 14.589856887783418, longitude: 120.98314042065157 } },
-  { name: 'PNU Gymnasium', coordinate: { latitude: 14.58836845294668, longitude: 120.98263528399174 } },
-  { name: 'YMCA of Manila', coordinate: { latitude: 14.588845283492326, longitude: 120.98254227148138 } },
-  { name: 'Maceda Building', coordinate: { latitude: 14.587614491989854, longitude: 120.9827890805987 } },
+  { name: 'Verdant Court', coordinate: { latitude: 14.454110746204451, longitude: 120.98066721425005 } },
+  { name: 'Rayville Court', coordinate: { latitude: 14.457197537025898, longitude: 120.9810627816938 } },
+  { name: 'Camella IV Court', coordinate: { latitude: 14.457402635001243, longitude: 120.9845678458565 } },
+  { name: 'Camella 3C Court', coordinate: { latitude: 14.45693070132432, longitude: 120.98673503822802 } },
+  { name: 'Manuela 4B Court', coordinate: { latitude: 14.45569782417187, longitude: 120.98859939233947 } },
 ];
 
 const INITIAL_REGION = {
-  latitude: 14.5995, longitude: 120.9850,
+  latitude: 14.455849726559434, longitude: 120.98338557152699,
   latitudeDelta: 0.012, longitudeDelta: 0.010,
-};
-
-const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-  const R = 6371; 
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
 };
 
 // ---------------------------------------------------------------------------
@@ -130,9 +124,11 @@ export default function HomeScreen() {
 
   // --- SENSOR & LOCATION STATE ---
   const [liveWaterLevel, setLiveWaterLevel] = useState<number>(0);
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<any>(null);
   const [userLocation, setUserLocation] = useState<any>(null);
   const [activeRoute, setActiveRoute] = useState<{coords: any[], distance: number, time: number, name: string} | null>(null);
+  const [fitId, setFitId] = useState(0);
+  const [navigating, setNavigating] = useState(false);
 
   // 1. Logic for categorizing the flood risk based on water level
   const getFloodStatus = (level: number) => {
@@ -169,17 +165,8 @@ export default function HomeScreen() {
 
   const currentStatus = getFloodStatus(liveWaterLevel);
 
-  // 2. Listen for Firebase Data Updates
-  useEffect(() => {
-    const sensorRef = ref(db, 'sensors/sensor_id_01');
-    const unsubscribe = onValue(sensorRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data && data.current_reading !== undefined) {
-        setLiveWaterLevel(data.current_reading);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
+  // 2. Listen for sensor updates
+  // TODO: subscribe to the Supabase sensor table (Realtime) and call setLiveWaterLevel.
 
   // 3. Status Change Detection & Alert Generation
   useEffect(() => {
@@ -227,31 +214,38 @@ export default function HomeScreen() {
   }, []);
 
   // 5. Navigation Action
-  const handleNavigate = () => {
+  const handleNavigate = async () => {
     if (!userLocation) {
       Alert.alert("Locating...", "Still waiting for your GPS location. Make sure location services are on.");
       return;
     }
+    if (navigating) return;
 
-    let minDistance = Infinity;
-    let nearestArea: EvacArea | null = null;
-
-    EVAC_AREAS.forEach(area => {
-      const dist = getDistance(userLocation.latitude, userLocation.longitude, area.coordinate.latitude, area.coordinate.longitude);
-      if (dist < minDistance) { minDistance = dist; nearestArea = area; }
-    });
-
-    if (nearestArea) {
-      const timeInMins = Math.max(1, Math.ceil(minDistance * 12)); 
-      setActiveRoute({ coords: [userLocation, nearestArea.coordinate], distance: minDistance, time: timeInMins, name: nearestArea.name });
-
-      if (mapRef.current) {
-        mapRef.current.fitToCoordinates([userLocation, nearestArea.coordinate], { edgePadding: { top: 60, right: 60, bottom: 60, left: 60 }, animated: true });
+    setNavigating(true);
+    try {
+      const route = await findEvacuationRoute(userLocation, EVAC_AREAS, FLOOD_LOCATIONS, FLOOD_RADIUS_METERS);
+      if (route.estimated) {
+        Alert.alert("Walking directions unavailable", "Showing a straight-line estimate instead. Check your internet connection and try again.");
+      } else if (route.crossesFlood) {
+        Alert.alert("Route Crosses a Flood Zone", "No dry path to an evacuation area was found. This route passes through flooded streets, so proceed with extreme caution or call for help.");
       }
+
+      setActiveRoute(route);
+      setFitId((id) => id + 1);
+      mapRef.current?.fitToCoordinates(route.coords, {
+        edgePadding: { top: 60, right: 60, bottom: 60, left: 60 },
+        animated: true,
+      });
+    } finally {
+      setNavigating(false);
     }
   };
 
   const currentLayer = MAP_LAYERS.find((layer) => layer.key === activeLayer)!;
+  const leafletData = useMemo(() => buildLeafletData({
+    floods: FLOOD_LOCATIONS, floodRadius: FLOOD_RADIUS_METERS, evacAreas: EVAC_AREAS,
+    userLocation, route: activeRoute?.coords ?? null, fitId,
+  }), [userLocation, activeRoute, fitId]);
   const displayDistance = activeRoute ? (unitSystem === 'imperial' ? (activeRoute.distance * 0.621371).toFixed(2) + ' mi' : (activeRoute.distance < 1 ? Math.round(activeRoute.distance * 1000) + ' m' : activeRoute.distance.toFixed(2) + ' km')) : '--';
   const displayTime = activeRoute ? `Est. ${activeRoute.time} mins walk` : 'Standby';
 
@@ -307,25 +301,50 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.mockMap}>
-            <MapView ref={mapRef} style={StyleSheet.absoluteFillObject} provider={PROVIDER_DEFAULT} initialRegion={mapRegion} onRegionChangeComplete={(region) => setMapRegion(region)} mapType={currentLayer.nativeSatellite ? 'satellite' : 'standard'} showsUserLocation showsMyLocationButton showsCompass rotateEnabled scrollEnabled zoomEnabled zoomControlEnabled zoomTapEnabled pitchEnabled={false}>
+            {activeLayer === 'street' ? (
+              <LeafletMap data={leafletData} style={styles.mapView} />
+            ) : (
+            <MapSurface ref={mapRef} style={styles.mapView} initialRegion={mapRegion} onMapReady={() => mapRef.current?.fitToCoordinates(
+              FLOOD_LOCATIONS.flatMap((location) => {
+                const latitudeOffset = FLOOD_RADIUS_METERS / 111320;
+                const longitudeOffset = FLOOD_RADIUS_METERS / (111320 * Math.cos(location.latitude * Math.PI / 180));
+                return [
+                  { latitude: location.latitude - latitudeOffset, longitude: location.longitude - longitudeOffset },
+                  { latitude: location.latitude + latitudeOffset, longitude: location.longitude + longitudeOffset },
+                ];
+              }),
+              { edgePadding: { top: 50, right: 50, bottom: 50, left: 50 }, animated: false }
+            )} onRegionChangeComplete={(region) => setMapRegion(region)} mapType={currentLayer.nativeSatellite ? 'satellite' : 'standard'} showsUserLocation showsMyLocationButton showsCompass rotateEnabled scrollEnabled zoomEnabled zoomControlEnabled zoomTapEnabled pitchEnabled={false}>
               {!currentLayer.nativeSatellite && currentLayer.baseUrl && <UrlTile urlTemplate={currentLayer.baseUrl} maximumZ={19} flipY={false} tileSize={256} zIndex={0} />}
               {!currentLayer.nativeSatellite && currentLayer.tileUrl !== '' && <UrlTile urlTemplate={currentLayer.tileUrl} maximumZ={19} flipY={false} tileSize={256} zIndex={currentLayer.baseUrl ? 1 : 0} opacity={currentLayer.baseUrl ? 0.8 : 1} />}
-              <Circle center={FLOOD_LOCATION} radius={130} strokeColor="rgba(231,76,60,0.8)" fillColor="rgba(231,76,60,0.18)" strokeWidth={2} />
+              {FLOOD_LOCATIONS.map((location, index) => (
+                <Circle
+                  key={`flood-circle-${index}`}
+                  center={location}
+                  radius={FLOOD_RADIUS_METERS}
+                  strokeColor="rgba(231,76,60,0.8)"
+                  fillColor="rgba(231,76,60,0.18)"
+                  strokeWidth={2}
+                />
+              ))}
               {activeRoute && <Polyline coordinates={activeRoute.coords} strokeColor={Colors.teal} strokeWidth={4} lineDashPattern={[10, 6]} />}
               {EVAC_AREAS.map((area) => (
-                <Marker key={area.name} coordinate={area.coordinate} anchor={{ x: 0.5, y: 1 }}>
+                <Marker key={area.name} coordinate={area.coordinate} anchor={{ x: 0.5, y: 0.5 }}>
                   <View style={styles.markerWrap}><View style={styles.markerOrange}><Feather name="home" size={10} color="#fff" /></View></View>
                 </Marker>
               ))}
               {userLocation && (
-                <Marker coordinate={userLocation} anchor={{ x: 0.5, y: 1 }} tracksViewChanges={false}>
-                  <View style={styles.markerWrap}><View style={styles.markerTeal}><Feather name="map-pin" size={16} color="#fff" /></View><View style={[styles.markerLabel, { backgroundColor: '#0d8b80' }]}><Text style={styles.markerLabelText}>YOU</Text></View></View>
+                <Marker coordinate={userLocation} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false}>
+                  <View style={styles.markerWrap}><View style={styles.markerSpacer} /><View style={styles.markerTeal}><Feather name="map-pin" size={16} color="#fff" /></View><View style={[styles.markerLabel, { backgroundColor: '#0d8b80' }]}><Text style={styles.markerLabelText}>YOU</Text></View></View>
                 </Marker>
               )}
-              <Marker coordinate={FLOOD_LOCATION} anchor={{ x: 0.5, y: 1 }} tracksViewChanges={false}>
-                <View style={styles.markerWrap}><View style={styles.markerRed}><Feather name="alert-triangle" size={13} color="#fff" /></View><View style={[styles.markerLabel, { backgroundColor: Colors.redDark }]}><Text style={styles.markerLabelText}>FLOOD ZONE</Text></View></View>
-              </Marker>
-            </MapView>
+              {FLOOD_LOCATIONS.map((location, index) => (
+                <Marker key={`flood-marker-${index}`} coordinate={location} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false}>
+                  <View style={styles.markerWrap}><View style={styles.markerSpacer} /><View style={styles.markerRed}><Feather name="alert-triangle" size={13} color="#fff" /></View><View style={[styles.markerLabel, { backgroundColor: Colors.redDark }]}><Text style={styles.markerLabelText}>FLOOD ZONE</Text></View></View>
+                </Marker>
+              ))}
+            </MapSurface>
+            )}
             <View style={styles.distanceCard}>
               <Text style={styles.distanceLabel}>DISTANCE</Text>
               <Text style={styles.distanceValue}>{displayDistance}</Text>
@@ -337,9 +356,9 @@ export default function HomeScreen() {
           </View>
 
           <LinearGradient colors={[Colors.navyMid, Colors.teal]} style={styles.navigateBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-            <TouchableOpacity style={styles.navigateBtnInner} onPress={handleNavigate}>
+            <TouchableOpacity style={styles.navigateBtnInner} onPress={handleNavigate} disabled={navigating}>
               <Feather name="navigation" size={18} color={Colors.textWhite} />
-              <Text style={[styles.navigateBtnText, { fontSize: Fonts.sizes.base * fs }]}>Navigate to Nearest Evacuation Area</Text>
+              <Text style={[styles.navigateBtnText, { fontSize: Fonts.sizes.base * fs }]}>{navigating ? 'Finding route…' : 'Navigate to Nearest Evacuation Area'}</Text>
             </TouchableOpacity>
           </LinearGradient>
         </View>
@@ -451,12 +470,14 @@ const styles = StyleSheet.create({
   layerBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderRadius: Radius.full, paddingHorizontal: 10, paddingVertical: 6 },
   layerBtnText: { fontWeight: '600' },
   mockMap: { height: 200, borderRadius: Radius.lg, overflow: 'hidden', marginBottom: Spacing.md, position: 'relative' },
+  mapView: { flex: 1 },
   markerWrap: { alignItems: 'center' },
   markerTeal: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.teal, alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: 'rgba(255,255,255,0.6)' },
   markerRed: { width: 30, height: 30, borderRadius: 15, backgroundColor: Colors.red, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)' },
   markerGreen: { width: 30, height: 30, borderRadius: 15, backgroundColor: Colors.green, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)' },
   markerOrange: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#f39c12', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.6)', },
-  markerLabel: { marginTop: 3, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  markerLabel: { marginTop: 3, height: 14, paddingHorizontal: 6, justifyContent: 'center', borderRadius: 4 },
+  markerSpacer: { height: 17 },
   markerLabelText: { fontSize: 8, color: '#fff', fontWeight: '800', letterSpacing: 0.5 },
   distanceCard: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(13,59,94,0.92)', borderRadius: Radius.md, padding: 10, borderWidth: 1, borderColor: 'rgba(46,196,182,0.3)' },
   distanceLabel: { fontSize: 8, color: Colors.textLight, fontWeight: '700', letterSpacing: 1 },
