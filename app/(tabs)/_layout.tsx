@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { Colors, Radius } from '../../constants/theme';
 import { useTheme } from '../../constants/ThemeContext';
@@ -10,6 +11,26 @@ type TabIconProps = {
   label: string;
   focused: boolean;
 };
+
+// Full-height tap target with instant press feedback.
+function TabButton(props: any) {
+  const { onPress, onLongPress, accessibilityState, accessibilityLabel, testID, children } = props;
+  return (
+    <Pressable
+      onPress={onPress}
+      onLongPress={onLongPress}
+      accessibilityRole="button"
+      accessibilityState={accessibilityState}
+      accessibilityLabel={accessibilityLabel}
+      testID={testID}
+      hitSlop={{ top: 8, bottom: 8 }}
+      android_ripple={null}
+      style={({ pressed }) => [styles.tabButton, pressed && styles.tabButtonPressed]}
+    >
+      {children}
+    </Pressable>
+  );
+}
 
 function TabIcon({ name, label, focused }: TabIconProps) {
   const { darkMode } = useTheme();
@@ -42,22 +63,23 @@ export default function TabLayout() {
   const { darkMode } = useTheme();
 
   const tabBarBg = darkMode ? '#0d1f33' : Colors.bgWhite;
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
+        // Mount every tab up front so switching never waits on a first render (the maps load slowly).
+        lazy: false,
+        tabBarButton: TabButton,
+        tabBarHideOnKeyboard: true,
         tabBarStyle: [
           styles.tabBar,
-          { backgroundColor: tabBarBg },
+          { backgroundColor: tabBarBg, bottom: Math.max(insets.bottom, 12) },
         ],
         tabBarShowLabel: false,
         tabBarItemStyle: styles.tabBarItem,
-        tabBarIconStyle: {
-          width: '100%',
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
+        tabBarIconStyle: styles.tabBarIcon,
       }}
     >
       <Tabs.Screen
@@ -99,13 +121,14 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   tabBar: {
     borderTopWidth: 0,
-    height: 70,
+    height: 64,
     borderRadius: Radius.xxl,
     marginHorizontal: 12,
-    marginBottom: 16,
     position: 'absolute',
-    paddingTop: 6,
-    paddingBottom: 6,
+    left: 0,
+    right: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.08,
@@ -114,32 +137,45 @@ const styles = StyleSheet.create({
   },
   tabBarItem: {
     flex: 1,
-    height: 70,
+    height: 64,
     paddingVertical: 0,
     paddingHorizontal: 0,
+  },
+  tabBarIcon: {
+    width: '100%',
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  tabButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabButtonPressed: {
+    opacity: 0.6,
+    transform: [{ scale: 0.95 }],
   },
   tabItem: {
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 23,
   },
   iconWrapper: {
     width: 36,
-    height: 28,
+    height: 30,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 2,
   },
   activeIconWrapper: {
     width: 60,
-    height: 32,
+    height: 30,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.teal,
     borderRadius: Radius.full,
+    marginBottom: 2,
   },
   tabLabel: {
     fontSize: 10,

@@ -1,7 +1,7 @@
 # 🌊 FloodSense
 
 A community-based flood monitoring, emergency response, and evacuation routing mobile app built specifically for **Barangay Pamplona Tres, Las Pinas City**.
-Built with **Expo + React Native + TypeScript** and powered by **Firebase** for real-time IoT sensor data and authentication.
+Built with **Expo + React Native + TypeScript** and powered by **Supabase** for real-time IoT sensor data and authentication.
 
 ---
 
