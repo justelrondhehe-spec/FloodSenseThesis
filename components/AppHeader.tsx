@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Modal, ScrollView, Switch, Alert,
+  Modal, ScrollView, Switch, Alert, Image,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -64,7 +64,7 @@ export default function AppHeader({ showBadge = true }: AppHeaderProps) {
         {/* Logo + Title */}
         <View style={styles.logoRow}>
           <View style={styles.logoBox}>
-            <Feather name="map-pin" size={20} color={Colors.textWhite} />
+            <Image source={require("../assets/logo.png")} style={styles.logoImg} resizeMode="contain" />
           </View>
           <View>
             <Text style={styles.appName}>FloodSense</Text>
@@ -298,8 +298,9 @@ const styles = StyleSheet.create({
   logoRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   logoBox: {
     width: 40, height: 40, borderRadius: 10,
-    backgroundColor: Colors.teal, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center',
   },
+  logoImg: { width: 30, height: 30 },
   appName: { fontSize: Fonts.sizes.lg, fontWeight: '800', color: Colors.textWhite, letterSpacing: 0.3 },
   appSub: { fontSize: Fonts.sizes.xs, color: Colors.textLight, fontWeight: '600', letterSpacing: 1 },
   actions: { flexDirection: 'row', gap: Spacing.sm },
