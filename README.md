@@ -11,7 +11,7 @@ Built with **Expo + React Native + TypeScript** and powered by **Supabase** for 
 | ------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | **Auth**      | Login, Registration, Email Verification, and Mobile Number setup flow.                                                  |
 | **Home**      | Live flood water level widget, real-time threshold popups, map preview, and a dynamic recent alerts feed.               |
-| **Map**       | Interactive evacuation map with live user tracking (expo-location), custom markers, and polyline routing to safe zones. |
+| **Map**       | Interactive evacuation map with live user tracking (expo-location), custom markers, and polyline routing to evacuation areas. |
 | **Guide**     | Expandable safety guidelines — Before, During, and After a Flood.                                                       |
 | **Emergency** | SOS 911 one-tap dialer + quick-dial local emergency contacts.                                                           |
 

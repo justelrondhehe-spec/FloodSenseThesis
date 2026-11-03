@@ -79,12 +79,13 @@ const MAP_LAYERS: MapLayer[] = [
 // ---------------------------------------------------------------------------
 // Coordinates — Brgy Pamplona Tres, Las Piñas City, Metro Manila, Philippines
 // ---------------------------------------------------------------------------
+// Same flood areas and DRRM office as the FloodSense website (GeospatialMonitor.tsx).
 const FLOOD_LOCATIONS = [
-  { latitude: 14.456889476749904, longitude: 120.98302513245899 },
-  { latitude: 14.454809976368963, longitude: 120.983746010595 },
+  { latitude: 14.456840433002867, longitude: 120.98282717398664 },
+  { latitude: 14.454728512437777, longitude: 120.9837726555534 },
 ];
 const FLOOD_RADIUS_METERS = 130;
-const SAFE_LOCATION  = { latitude: 14.6025, longitude: 120.9875 };
+const DRRM_OFFICE = { latitude: 14.455053133983723, longitude: 120.98506119230326 };
 
 interface EvacArea {
   name: string;
@@ -94,26 +95,19 @@ interface EvacArea {
   };
 }
 
+// Same evacuation areas as the FloodSense website (GeospatialMonitor.tsx).
 const EVAC_AREAS: EvacArea[] = [
   {
-    name: 'Verdant Court',
-    coordinate: { latitude: 14.454110746204451, longitude: 120.98066721425005 },
+    name: 'Evacuation Area 1',
+    coordinate: { latitude: 14.454053235350871, longitude: 120.98067216651691 },
   },
   {
-    name: 'Rayville Court',
-    coordinate: { latitude: 14.457197537025898, longitude: 120.9810627816938 },
+    name: 'Evacuation Area 2',
+    coordinate: { latitude: 14.454186996765806, longitude: 120.98035432436127 },
   },
   {
-    name: 'Camella IV Court',
-    coordinate: { latitude: 14.457402635001243, longitude: 120.9845678458565 },
-  },
-  {
-    name: 'Camella 3C Court',
-    coordinate: { latitude: 14.45693070132432, longitude: 120.98673503822802 },
-  },
-  {
-    name: 'Manuela 4B Court',
-    coordinate: { latitude: 14.45569782417187, longitude: 120.98859939233947 },
+    name: 'Evacuation Area 3',
+    coordinate: { latitude: 14.45703539568615, longitude: 120.98108983679258 },
   },
 ];
 
@@ -156,7 +150,7 @@ export default function MapScreen() {
   const leafletData = useMemo(() => buildLeafletData({
     floods: FLOOD_LOCATIONS, floodRadius: FLOOD_RADIUS_METERS, evacAreas: EVAC_AREAS,
     evacCircleRadius: 60, evacLabel: 'EVAC', userLocation, route: activeRoute?.coords ?? null,
-    safeLocation: SAFE_LOCATION, fitId,
+    drrmOffice: DRRM_OFFICE, fitId,
   }), [userLocation, activeRoute, fitId]);
 
   useEffect(() => {
@@ -342,14 +336,14 @@ export default function MapScreen() {
           </Marker>
         ))}
 
-        {/* Safe Zone Marker */}
-        <Marker coordinate={SAFE_LOCATION} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false}>
+        {/* DRRM Office Marker */}
+        <Marker coordinate={DRRM_OFFICE} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false}>
           <View style={styles.markerWrap}><View style={styles.markerSpacer} />
-            <View style={styles.markerGreen}>
-              <Feather name="check" size={14} color="#fff" />
+            <View style={styles.markerNavy}>
+              <Feather name="shield" size={14} color="#fff" />
             </View>
-            <View style={[styles.markerLabel, { backgroundColor: Colors.greenDark }]}>
-              <Text style={styles.markerLabelText}>SAFE ZONE</Text>
+            <View style={[styles.markerLabel, { backgroundColor: Colors.navyMid }]}>
+              <Text style={styles.markerLabelText}>DRRM</Text>
             </View>
           </View>
         </Marker>
@@ -424,8 +418,8 @@ export default function MapScreen() {
             <View style={styles.legendItems}>
               <LegendItem color={Colors.teal}  label="Your Location" textColor={textSecondary} fs={fs} />
               <LegendItem color={Colors.red}   label="Flood Zone"    textColor={textSecondary} fs={fs} />
-              <LegendItem color={Colors.green} label="Safe Zone"     textColor={textSecondary} fs={fs} />
               <LegendItem color="#f39c12" label="Evacuation Area" textColor={textSecondary} fs={fs} />
+              <LegendItem color={Colors.navyMid} label="DRRM Office" textColor={textSecondary} fs={fs} />
             </View>
           </View>
 
@@ -532,8 +526,8 @@ const styles = StyleSheet.create({
   markerWrap:   { alignItems: 'center' },
   markerTeal:   { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.teal,  alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: 'rgba(255,255,255,0.6)' },
   markerRed:    { width: 30, height: 30, borderRadius: 15, backgroundColor: Colors.red,   alignItems: 'center', justifyContent: 'center', borderWidth: 2,   borderColor: 'rgba(255,255,255,0.5)' },
-  markerGreen:  { width: 30, height: 30, borderRadius: 15, backgroundColor: Colors.green, alignItems: 'center', justifyContent: 'center', borderWidth: 2,   borderColor: 'rgba(255,255,255,0.5)' },
   markerOrange: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#f39c12', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)', },
+  markerNavy:   { width: 30, height: 30, borderRadius: 15, backgroundColor: Colors.navyMid, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)' },
   markerLabel:  { marginTop: 3, height: 14, paddingHorizontal: 6, justifyContent: 'center', borderRadius: 4 },
   // Same height as label + gap, placed above the icon so the icon (not the whole pin) sits on the coordinate.
   markerSpacer: { height: 17 },

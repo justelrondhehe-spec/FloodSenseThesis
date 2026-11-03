@@ -6,30 +6,67 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "backgroundColor": "#0D3B5E"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.floodsense.app"
+      "bundleIdentifier": "com.floodsense.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Gagamitin ng FloodSense ang lokasyon mo para ituro ang pinakamalapit na evacuation center."
+      }
     },
     "android": {
       "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#0D3B5E"
       },
-      "package": "com.floodsense.app"
+      "package": "com.floodsense.app",
+      "config": {
+        "googleMaps": {
+          "apiKey": "ILAGAY_DITO_ANG_GOOGLE_MAPS_KEY"
+        }
+      },
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "plugins": [
       "expo-router",
       "expo-web-browser",
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Gagamitin ng FloodSense ang lokasyon mo para ituro ang pinakamalapit na evacuation center."
+        }
+      ],
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0D3B5E"
+        }
+      ]
     ],
     "scheme": "floodsense",
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "cdf1db7d-2bf6-4019-a54a-5de8d2b6f048"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/cdf1db7d-2bf6-4019-a54a-5de8d2b6f048"
     }
   }
 }
