@@ -1,0 +1,24 @@
+{
+  "cli": {
+    "version": ">= 27.3.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "node": "24.11.0",
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "node": "24.11.0",
+      "distribution": "internal"
+    },
+    "production": {
+      "node": "24.11.0",
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
