@@ -1,9 +1,7 @@
 import * as Location from 'expo-location';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, Alert } from 'react-native';
-import { MapSurface, Marker, Polyline, Circle, UrlTile } from '../../components/MapPrimitives';
 import LeafletMap from '../../components/LeafletMap';
-import PinMarker from '../../components/MapPin';
 import { buildLeafletData } from '../../components/leafletHtml';
 import { findEvacuationRoute } from '../../constants/routing';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -26,17 +24,14 @@ interface MapLayer {
   label: string;
   icon: React.ComponentProps<typeof Feather>['name'];
   description: string;
-  tileUrl: string;
-  baseUrl?: string;
-  nativeSatellite?: boolean;
 }
 
 const MAP_LAYERS: MapLayer[] = [
-  { key: 'street', label: 'Street', icon: 'map', description: 'Standard street map', tileUrl: '' },
-  { key: 'satellite', label: 'Satellite', icon: 'globe', description: 'Aerial/satellite imagery', tileUrl: '', nativeSatellite: true },
-  { key: 'terrain', label: 'Terrain', icon: 'triangle', description: 'Elevation & contours', tileUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}' },
-  { key: 'cycle', label: 'Cycle', icon: 'wind', description: 'Cycling routes', baseUrl: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', tileUrl: 'https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png' },
-  { key: 'transport', label: 'Transport', icon: 'truck', description: 'Transit & transport network', tileUrl: 'https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png' },
+  { key: 'street', label: 'Street', icon: 'map', description: 'Standard street map' },
+  { key: 'satellite', label: 'Satellite', icon: 'globe', description: 'Aerial/satellite imagery' },
+  { key: 'terrain', label: 'Terrain', icon: 'triangle', description: 'Elevation & contours' },
+  { key: 'cycle', label: 'Cycle', icon: 'wind', description: 'Cycling routes' },
+  { key: 'transport', label: 'Transport', icon: 'truck', description: 'Transit & transport network' },
 ];
 
 const FLOOD_LOCATIONS = [
@@ -57,11 +52,6 @@ const EVAC_AREAS: EvacArea[] = [
   { name: 'Camella 3C Court', coordinate: { latitude: 14.45693070132432, longitude: 120.98673503822802 } },
   { name: 'Manuela 4B Court', coordinate: { latitude: 14.45569782417187, longitude: 120.98859939233947 } },
 ];
-
-const INITIAL_REGION = {
-  latitude: 14.455849726559434, longitude: 120.98338557152699,
-  latitudeDelta: 0.012, longitudeDelta: 0.010,
-};
 
 // ---------------------------------------------------------------------------
 // Widgets
@@ -113,7 +103,6 @@ function AlertItem({ alert, cardBg, textSecondary }: { alert: FloodAlert; cardBg
 // ---------------------------------------------------------------------------
 export default function HomeScreen() {
   const { darkMode, fontSize, unitSystem } = useTheme();
-  const [mapRegion, setMapRegion] = useState(INITIAL_REGION);
   const [activeLayer, setActiveLayer] = useState<LayerKey>('street');
   const [pickerVisible, setPickerVisible] = useState(false);
 
@@ -127,7 +116,6 @@ export default function HomeScreen() {
   const { sensors } = useLiveSensors();
   const liveSensor = pickWorstSensor(sensors);
   const liveWaterLevel: number | null = liveSensor ? (liveSensor.reading as number) : null;
-  const mapRef = useRef<any>(null);
   const [userLocation, setUserLocation] = useState<any>(null);
   const [activeRoute, setActiveRoute] = useState<{coords: any[], distance: number, time: number, name: string} | null>(null);
   const [fitId, setFitId] = useState(0);
@@ -242,10 +230,6 @@ export default function HomeScreen() {
 
       setActiveRoute(route);
       setFitId((id) => id + 1);
-      mapRef.current?.fitToCoordinates(route.coords, {
-        edgePadding: { top: 60, right: 60, bottom: 60, left: 60 },
-        animated: true,
-      });
     } finally {
       setNavigating(false);
     }
@@ -253,9 +237,9 @@ export default function HomeScreen() {
 
   const currentLayer = MAP_LAYERS.find((layer) => layer.key === activeLayer)!;
   const leafletData = useMemo(() => buildLeafletData({
-    floods: FLOOD_LOCATIONS, floodRadius: FLOOD_RADIUS_METERS, evacAreas: EVAC_AREAS,
+    layer: activeLayer, evacPinSize: 22, floods: FLOOD_LOCATIONS, floodRadius: FLOOD_RADIUS_METERS, evacAreas: EVAC_AREAS,
     userLocation, route: activeRoute?.coords ?? null, fitId,
-  }), [userLocation, activeRoute, fitId]);
+  }), [activeLayer, userLocation, activeRoute, fitId]);
   const displayDistance = activeRoute ? (unitSystem === 'imperial' ? (activeRoute.distance * 0.621371).toFixed(2) + ' mi' : (activeRoute.distance < 1 ? Math.round(activeRoute.distance * 1000) + ' m' : activeRoute.distance.toFixed(2) + ' km')) : '--';
   const displayTime = activeRoute ? `Est. ${activeRoute.time} mins walk` : 'Standby';
 
@@ -311,44 +295,7 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.mockMap}>
-            {activeLayer === 'street' ? (
-              <LeafletMap data={leafletData} style={styles.mapView} />
-            ) : (
-            <MapSurface ref={mapRef} style={styles.mapView} initialRegion={mapRegion} onMapReady={() => mapRef.current?.fitToCoordinates(
-              FLOOD_LOCATIONS.flatMap((location) => {
-                const latitudeOffset = FLOOD_RADIUS_METERS / 111320;
-                const longitudeOffset = FLOOD_RADIUS_METERS / (111320 * Math.cos(location.latitude * Math.PI / 180));
-                return [
-                  { latitude: location.latitude - latitudeOffset, longitude: location.longitude - longitudeOffset },
-                  { latitude: location.latitude + latitudeOffset, longitude: location.longitude + longitudeOffset },
-                ];
-              }),
-              { edgePadding: { top: 50, right: 50, bottom: 50, left: 50 }, animated: false }
-            )} onRegionChangeComplete={(region) => setMapRegion(region)} mapType={currentLayer.nativeSatellite ? 'satellite' : 'standard'} showsUserLocation showsMyLocationButton showsCompass rotateEnabled scrollEnabled zoomEnabled zoomControlEnabled zoomTapEnabled pitchEnabled={false}>
-              {!currentLayer.nativeSatellite && currentLayer.baseUrl && <UrlTile urlTemplate={currentLayer.baseUrl} maximumZ={19} flipY={false} tileSize={256} zIndex={0} />}
-              {!currentLayer.nativeSatellite && currentLayer.tileUrl !== '' && <UrlTile urlTemplate={currentLayer.tileUrl} maximumZ={19} flipY={false} tileSize={256} zIndex={currentLayer.baseUrl ? 1 : 0} opacity={currentLayer.baseUrl ? 0.8 : 1} />}
-              {FLOOD_LOCATIONS.map((location, index) => (
-                <Circle
-                  key={`flood-circle-${index}`}
-                  center={location}
-                  radius={FLOOD_RADIUS_METERS}
-                  strokeColor="rgba(231,76,60,0.8)"
-                  fillColor="rgba(231,76,60,0.18)"
-                  strokeWidth={2}
-                />
-              ))}
-              {activeRoute && <Polyline coordinates={activeRoute.coords} strokeColor={Colors.teal} strokeWidth={4} lineDashPattern={[10, 6]} />}
-              {EVAC_AREAS.map((area) => (
-                <PinMarker key={area.name} coordinate={area.coordinate} color="#f39c12" icon="home" size={22} iconSize={10} />
-              ))}
-              {userLocation && (
-                <PinMarker coordinate={userLocation} color={Colors.teal} icon="map-pin" size={36} iconSize={16} label="YOU" labelColor="#0d8b80" />
-              )}
-              {FLOOD_LOCATIONS.map((location, index) => (
-                <PinMarker key={`flood-marker-${index}`} coordinate={location} color={Colors.red} icon="alert-triangle" size={30} iconSize={13} label="FLOOD ZONE" labelColor={Colors.redDark} />
-              ))}
-            </MapSurface>
-            )}
+            <LeafletMap data={leafletData} style={styles.mapView} />
             <View style={styles.distanceCard}>
               <Text style={styles.distanceLabel}>DISTANCE</Text>
               <Text style={styles.distanceValue}>{displayDistance}</Text>

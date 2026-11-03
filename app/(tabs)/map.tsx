@@ -10,9 +10,7 @@ import {
   Animated,
   Alert,
 } from 'react-native';
-import { MapSurface, Marker, Polyline, Circle, UrlTile } from '../../components/MapPrimitives';
 import LeafletMap from '../../components/LeafletMap';
-import PinMarker from '../../components/MapPin';
 import { buildLeafletData } from '../../components/leafletHtml';
 import { findEvacuationRoute } from '../../constants/routing';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -32,9 +30,6 @@ interface MapLayer {
   label: string;
   icon: React.ComponentProps<typeof Feather>['name'];
   description: string;
-  tileUrl: string;
-  baseUrl?: string;
-  nativeSatellite?: boolean;
 }
 
 const MAP_LAYERS: MapLayer[] = [
@@ -43,37 +38,30 @@ const MAP_LAYERS: MapLayer[] = [
     label: 'Street',
     icon: 'map',
     description: 'Standard street map',
-    tileUrl: '',
   },
   {
     key: 'satellite',
     label: 'Satellite',
     icon: 'globe',
     description: 'Aerial/satellite imagery',
-    tileUrl: '',
-    nativeSatellite: true,
   },
   {
     key: 'terrain',
     label: 'Terrain',
     icon: 'triangle',
     description: 'Elevation & contours',
-    tileUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
   },
   {
     key: 'cycle',
     label: 'Cycle',
     icon: 'wind',
     description: 'Cycling routes',
-    baseUrl: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-    tileUrl: 'https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png',
   },
   {
     key: 'transport',
     label: 'Transport',
     icon: 'truck',
     description: 'Transit & transport network',
-    tileUrl: 'https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png',
   },
 ];
 
@@ -117,13 +105,6 @@ const EVAC_AREAS: EvacArea[] = [
   },
 ];
 
-const INITIAL_REGION = {
-  latitude: 14.455849726559434,
-  longitude: 120.98338557152699,
-  latitudeDelta: 0.012,
-  longitudeDelta: 0.010,
-};
-
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -141,7 +122,6 @@ export default function MapScreen() {
   const [activeLayer, setActiveLayer] = useState<LayerKey>('street');
   const [pickerVisible, setPickerVisible] = useState(false);
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
-  const [mapRegion, setMapRegion] = useState(INITIAL_REGION);
   const [userLocation, setUserLocation] = useState<any>(null);
   
   // NEW: State to store the active navigation route
@@ -150,14 +130,13 @@ export default function MapScreen() {
   const [fitId, setFitId] = useState(0);
   const [navigating, setNavigating] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const mapRef = useRef<any>(null); // NEW: Map reference for zooming
 
   const currentLayer = MAP_LAYERS.find(l => l.key === activeLayer)!;
   const leafletData = useMemo(() => buildLeafletData({
-    floods: FLOOD_LOCATIONS, floodRadius: FLOOD_RADIUS_METERS, evacAreas: EVAC_AREAS,
+    layer: activeLayer, floods: FLOOD_LOCATIONS, floodRadius: FLOOD_RADIUS_METERS, evacAreas: EVAC_AREAS,
     evacCircleRadius: 60, evacLabel: 'EVAC', userLocation, route: activeRoute?.coords ?? null,
     fitId,
-  }), [userLocation, activeRoute, fitId]);
+  }), [activeLayer, userLocation, activeRoute, fitId]);
 
   useEffect(() => {
     (async () => {
@@ -197,10 +176,6 @@ export default function MapScreen() {
 
       setActiveRoute(route);
       setFitId((id) => id + 1);
-      mapRef.current?.fitToCoordinates(route.coords, {
-        edgePadding: { top: 80, right: 80, bottom: 80, left: 80 },
-        animated: true,
-      });
     } finally {
       setNavigating(false);
     }
@@ -238,84 +213,7 @@ export default function MapScreen() {
 
   const renderInteractiveMap = (fullscreen = false) => (
     <>
-      {activeLayer === 'street' ? (
-        <LeafletMap data={leafletData} style={styles.mapView} />
-      ) : (
-      <MapSurface
-        ref={mapRef}
-        style={styles.mapView}
-        initialRegion={mapRegion}
-        onMapReady={() => mapRef.current?.fitToCoordinates(
-          FLOOD_LOCATIONS.flatMap((location) => {
-            const latitudeOffset = FLOOD_RADIUS_METERS / 111320;
-            const longitudeOffset = FLOOD_RADIUS_METERS / (111320 * Math.cos(location.latitude * Math.PI / 180));
-            return [
-              { latitude: location.latitude - latitudeOffset, longitude: location.longitude - longitudeOffset },
-              { latitude: location.latitude + latitudeOffset, longitude: location.longitude + longitudeOffset },
-            ];
-          }),
-          { edgePadding: { top: 70, right: 70, bottom: 70, left: 70 }, animated: false }
-        )}
-        onRegionChangeComplete={(region) => setMapRegion(region)}
-        mapType={currentLayer.nativeSatellite ? 'satellite' : 'standard'}
-        showsUserLocation
-        showsMyLocationButton
-        showsCompass
-        rotateEnabled
-        scrollEnabled
-        zoomEnabled
-        zoomControlEnabled
-        zoomTapEnabled
-        pitchEnabled={false}
-      >
-        {!currentLayer.nativeSatellite && currentLayer.baseUrl && (
-          <UrlTile urlTemplate={currentLayer.baseUrl} maximumZ={19} flipY={false} tileSize={256} zIndex={0} />
-        )}
-        {!currentLayer.nativeSatellite && currentLayer.tileUrl !== '' && (
-          <UrlTile urlTemplate={currentLayer.tileUrl} maximumZ={19} flipY={false} tileSize={256} zIndex={currentLayer.baseUrl ? 1 : 0} opacity={currentLayer.baseUrl ? 0.8 : 1} />
-        )}
-
-        {/* Flood zone radius */}
-        {FLOOD_LOCATIONS.map((location, index) => (
-          <Circle
-            key={`flood-circle-${index}`}
-            center={location}
-            radius={FLOOD_RADIUS_METERS}
-            strokeColor="rgba(231,76,60,0.8)"
-            fillColor="rgba(231,76,60,0.18)"
-            strokeWidth={2}
-          />
-        ))}
-
-        {/* Evacuation Areas */}
-        {EVAC_AREAS.map((area) => (
-          <React.Fragment key={area.name}>
-            <Circle center={area.coordinate} radius={60} strokeColor="rgba(255,165,0,0.9)" fillColor="rgba(255,165,0,0.22)" strokeWidth={2} />
-            <PinMarker coordinate={area.coordinate} color="#f39c12" icon="home" size={32} iconSize={14} label="EVAC" labelColor="#f39c12" />
-          </React.Fragment>
-        ))}
-
-        {/* Dynamic Evacuation Route */}
-        {activeRoute && (
-          <Polyline
-            coordinates={activeRoute.coords}
-            strokeColor={Colors.teal}
-            strokeWidth={4}
-            lineDashPattern={[10, 6]}
-          />
-        )}
-
-        {/* Your Location Custom Marker */}
-        {userLocation && (
-          <PinMarker coordinate={userLocation} color={Colors.teal} icon="map-pin" size={36} iconSize={16} label="YOU" labelColor="#0d8b80" />
-        )}
-
-        {/* Flood Zone Marker */}
-        {FLOOD_LOCATIONS.map((location, index) => (
-          <PinMarker key={`flood-marker-${index}`} coordinate={location} color={Colors.red} icon="alert-triangle" size={30} iconSize={13} label="FLOOD ZONE" labelColor={Colors.redDark} />
-        ))}
-      </MapSurface>
-      )}
+      <LeafletMap data={leafletData} style={styles.mapView} />
 
       {/* Distance overlay */}
       <View style={styles.distanceCard}>
