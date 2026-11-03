@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Marker } from './MapPrimitives';
 import type { Coordinate } from '../constants/routing';
 
 // The pin is drawn on a fixed-size canvas. The icon is placed at the exact centre of the canvas,
-// and the canvas centre is the map coordinate (anchor 0.5/0.5). The label is absolutely positioned
-// below the icon, so its text size can never shift the icon off the coordinate.
+// and the canvas centre must sit on the map coordinate. The label is absolutely positioned below the
+// icon, so its text size can never shift the icon off the coordinate.
+//
+// Android anchors custom markers at the bottom-centre by default, so it needs anchor 0.5/0.5.
+// iOS (Apple Maps) already centres a marker view on its coordinate, and passing `anchor` there shifts
+// the pin by half its size (the pin lands down-right of its circle), so it is left unset on iOS.
+const ANCHOR_PROPS = Platform.OS === 'android' ? { anchor: { x: 0.5, y: 0.5 } } : {};
 const CANVAS_WIDTH = 96;
 const CANVAS_HEIGHT = 84;
 const LABEL_GAP = 3;
@@ -34,7 +39,7 @@ export default function PinMarker({
   }, []);
 
   return (
-    <Marker coordinate={coordinate} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={tracking}>
+    <Marker coordinate={coordinate} tracksViewChanges={tracking} {...ANCHOR_PROPS}>
       <View style={styles.canvas}>
         <View style={[styles.badge, { width: size, height: size, borderRadius: size / 2, backgroundColor: color }]}>
           <Feather name={icon} size={iconSize} color="#fff" />
