@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Stack, router, useRootNavigationState, type Href } from 'expo-router';
+import React, { useEffect, useRef } from 'react';
+import { Stack, router, usePathname, useRootNavigationState, type Href } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ThemeProvider, useTheme } from '../constants/ThemeContext';
 import { View } from 'react-native';
@@ -12,6 +12,9 @@ function AppContent() {
   const { darkMode } = useTheme();
   const navigationState = useRootNavigationState();
   const navigationReady = !!navigationState?.key;
+  const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
 
   useEffect(() => {
     // Redirecting before the navigator mounts throws, so wait until it is ready.
@@ -38,6 +41,9 @@ function AppContent() {
         }
         return;
       }
+
+      // The email-confirmation screen signs the resident in itself; don't redirect away while it works.
+      if (pathnameRef.current.startsWith('/auth/callback')) return;
 
       router.replace('/(auth)/login' as Href);
     });

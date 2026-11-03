@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, Alert } from 'react-native';
 import { MapSurface, Marker, Polyline, Circle, UrlTile } from '../../components/MapPrimitives';
 import LeafletMap from '../../components/LeafletMap';
+import PinMarker from '../../components/MapPin';
 import { buildLeafletData } from '../../components/leafletHtml';
 import { findEvacuationRoute } from '../../constants/routing';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -338,19 +339,13 @@ export default function HomeScreen() {
               ))}
               {activeRoute && <Polyline coordinates={activeRoute.coords} strokeColor={Colors.teal} strokeWidth={4} lineDashPattern={[10, 6]} />}
               {EVAC_AREAS.map((area) => (
-                <Marker key={area.name} coordinate={area.coordinate} anchor={{ x: 0.5, y: 0.5 }}>
-                  <View style={styles.markerWrap}><View style={styles.markerOrange}><Feather name="home" size={10} color="#fff" /></View></View>
-                </Marker>
+                <PinMarker key={area.name} coordinate={area.coordinate} color="#f39c12" icon="home" size={22} iconSize={10} />
               ))}
               {userLocation && (
-                <Marker coordinate={userLocation} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false}>
-                  <View style={styles.markerWrap}><View style={styles.markerSpacer} /><View style={styles.markerTeal}><Feather name="map-pin" size={16} color="#fff" /></View><View style={[styles.markerLabel, { backgroundColor: '#0d8b80' }]}><Text style={styles.markerLabelText}>YOU</Text></View></View>
-                </Marker>
+                <PinMarker coordinate={userLocation} color={Colors.teal} icon="map-pin" size={36} iconSize={16} label="YOU" labelColor="#0d8b80" />
               )}
               {FLOOD_LOCATIONS.map((location, index) => (
-                <Marker key={`flood-marker-${index}`} coordinate={location} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false}>
-                  <View style={styles.markerWrap}><View style={styles.markerSpacer} /><View style={styles.markerRed}><Feather name="alert-triangle" size={13} color="#fff" /></View><View style={[styles.markerLabel, { backgroundColor: Colors.redDark }]}><Text style={styles.markerLabelText}>FLOOD ZONE</Text></View></View>
-                </Marker>
+                <PinMarker key={`flood-marker-${index}`} coordinate={location} color={Colors.red} icon="alert-triangle" size={30} iconSize={13} label="FLOOD ZONE" labelColor={Colors.redDark} />
               ))}
             </MapSurface>
             )}
@@ -494,14 +489,6 @@ const styles = StyleSheet.create({
   layerBtnText: { fontWeight: '600' },
   mockMap: { height: 200, borderRadius: Radius.lg, overflow: 'hidden', marginBottom: Spacing.md, position: 'relative' },
   mapView: { flex: 1 },
-  markerWrap: { alignItems: 'center' },
-  markerTeal: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.teal, alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: 'rgba(255,255,255,0.6)' },
-  markerRed: { width: 30, height: 30, borderRadius: 15, backgroundColor: Colors.red, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)' },
-  markerGreen: { width: 30, height: 30, borderRadius: 15, backgroundColor: Colors.green, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)' },
-  markerOrange: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#f39c12', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.6)', },
-  markerLabel: { marginTop: 3, height: 14, paddingHorizontal: 6, justifyContent: 'center', borderRadius: 4 },
-  markerSpacer: { height: 17 },
-  markerLabelText: { fontSize: 8, color: '#fff', fontWeight: '800', letterSpacing: 0.5 },
   distanceCard: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(13,59,94,0.92)', borderRadius: Radius.md, padding: 10, borderWidth: 1, borderColor: 'rgba(46,196,182,0.3)' },
   distanceLabel: { fontSize: 8, color: Colors.textLight, fontWeight: '700', letterSpacing: 1 },
   distanceValue: { fontSize: Fonts.sizes.xl, fontWeight: '900', color: Colors.teal },

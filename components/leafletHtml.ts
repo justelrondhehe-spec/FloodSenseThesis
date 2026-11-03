@@ -94,7 +94,6 @@ type BuildArgs = {
   evacLabel?: string;
   userLocation: LatLng | null;
   route: LatLng[] | null;
-  safeLocation?: LatLng;
   fitId: number;
 };
 
@@ -123,7 +122,6 @@ export function buildLeafletData(a: BuildArgs): LeafletData {
   }));
   if (a.userLocation) markers.push({ coordinate: a.userLocation, color: '#2EC4B6', icon: '●', label: 'YOU' });
   a.floods.forEach((coordinate) => markers.push({ coordinate, color: '#C0392B', icon: '!', label: 'FLOOD ZONE' }));
-  if (a.safeLocation) markers.push({ coordinate: a.safeLocation, color: '#27AE60', icon: '✓', label: 'SAFE ZONE' });
 
   // Fit the route when there is one, otherwise the flood zones.
   const fit = a.route ?? a.floods.flatMap((f) => circleBounds(f, a.floodRadius));

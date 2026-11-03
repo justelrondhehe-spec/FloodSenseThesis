@@ -9,6 +9,7 @@ import { Feather } from "@expo/vector-icons";
 import type { User } from "@supabase/supabase-js";
 
 import { supabase, isSupabaseConfigured } from "../../constants/supabase";
+import { getEmailRedirectUrl } from "../../constants/authLinks";
 import { getResident, isProfileComplete, normalizePhone, saveResident } from "../../constants/residents";
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -104,7 +105,7 @@ export default function AuthScreen() {
         const { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
         if (error) {
           if (error.code === "email_not_confirmed") {
-            await supabase.auth.resend({ type: "signup", email: cleanEmail });
+            await supabase.auth.resend({ type: "signup", email: cleanEmail, options: { emailRedirectTo: getEmailRedirectUrl() } });
             setStep("verify");
             return;
           }
@@ -113,7 +114,12 @@ export default function AuthScreen() {
         await routeSignedInUser(data.user);
       } else {
         // Supabase emails the confirmation link automatically on sign-up.
-        const { data, error } = await supabase.auth.signUp({ email: cleanEmail, password });
+        const { data, error } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+          // The confirmation link opens this app, not the website (Site URL).
+          options: { emailRedirectTo: getEmailRedirectUrl() },
+        });
         if (error) throw error;
         // A repeated sign-up for an existing email returns a user with no identities instead of an error.
         if (data.user && data.user.identities?.length === 0) {
@@ -155,7 +161,7 @@ export default function AuthScreen() {
   };
 
   const resendVerification = async () => {
-    const { error } = await supabase.auth.resend({ type: "signup", email: cleanEmail });
+    const { error } = await supabase.auth.resend({ type: "signup", email: cleanEmail, options: { emailRedirectTo: getEmailRedirectUrl() } });
     if (error) showAuthError(error);
     else Alert.alert("Email Sent", "We sent a new verification link.");
   };
