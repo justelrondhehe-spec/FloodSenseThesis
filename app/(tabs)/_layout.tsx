@@ -24,7 +24,7 @@ function TabButton(props: any) {
       accessibilityLabel={accessibilityLabel}
       testID={testID}
       hitSlop={{ top: 8, bottom: 8 }}
-      android_ripple={null}
+      android_ripple={undefined}
       style={({ pressed }) => [styles.tabButton, pressed && styles.tabButtonPressed]}
     >
       {children}

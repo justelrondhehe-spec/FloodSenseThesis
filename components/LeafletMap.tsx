@@ -30,7 +30,8 @@ export default function LeafletMap({ data, style, onPress }: Props) {
   };
 
   return (
-    <WebView
+    // WebView<{}>: react-native-webview 14 defaults its generic to `undefined`, which makes every prop `never`.
+    <WebView<{}>
       ref={webRef}
       style={style}
       // baseUrl gives OpenStreetMap tile requests a valid referer.

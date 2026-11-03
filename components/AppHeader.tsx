@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Spacing, Fonts } from '../constants/theme';
 import { useTheme } from '../constants/ThemeContext';
 import { supabase } from '../constants/supabase';
+import { useNotifications, timeAgo } from '../constants/notifications';
 
 type AppHeaderProps = {
   showBadge?: boolean;
@@ -16,6 +17,7 @@ type AppHeaderProps = {
 export default function AppHeader({ showBadge = true }: AppHeaderProps) {
   const [notifVisible, setNotifVisible] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const { notifications, unreadCount, markAllRead } = useNotifications();
   const [pushEnabled, setPushEnabled] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [locationEnabled, setLocationEnabled] = useState(false);
@@ -52,11 +54,12 @@ export default function AppHeader({ showBadge = true }: AppHeaderProps) {
     );
   };
 
-  const notifications = [
-    { id: '1', icon: 'alert-triangle', color: Colors.orange, title: 'Water Level Rising', desc: 'Level reached 1.8m in Barangay Pamplona Tres', time: '2 mins ago' },
-    { id: '2', icon: 'alert-circle', color: '#C0392B', title: 'Flood Warning Issued', desc: 'Moderate flooding expected in low-lying areas', time: '15 mins ago' },
-    { id: '3', icon: 'check-circle', color: Colors.teal, title: 'Sensor Online', desc: 'All IoT sensors reporting normally', time: '1 hour ago' },
-  ];
+  const typeStyle = {
+    warning: { icon: 'alert-triangle', color: Colors.orange },
+    info: { icon: 'info', color: Colors.teal },
+    safe: { icon: 'check-circle', color: Colors.teal },
+    notice: { icon: 'bell', color: Colors.navyLight },
+  } as const;
 
   return (
     <>
@@ -76,9 +79,9 @@ export default function AppHeader({ showBadge = true }: AppHeaderProps) {
 
         {/* Actions */}
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => setNotifVisible(true)}>
+          <TouchableOpacity style={styles.iconBtn} onPress={() => { setNotifVisible(true); markAllRead(); }}>
             <Feather name="bell" size={18} color={Colors.textWhite} />
-            {showBadge && <View style={styles.badge} />}
+            {showBadge && unreadCount > 0 && <View style={styles.badge} />}
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn} onPress={() => setSettingsVisible(true)}>
             <Feather name="settings" size={18} color={Colors.textWhite} />
@@ -101,20 +104,25 @@ export default function AppHeader({ showBadge = true }: AppHeaderProps) {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
+              {notifications.length === 0 && (
+                <Text style={[styles.notifDesc, { color: subtitleColor, fontSize: Fonts.sizes.sm * fontSizeScale, textAlign: 'center', paddingVertical: Spacing.lg }]}>
+                  No notifications yet
+                </Text>
+              )}
               {notifications.map((n) => (
                 <View key={n.id} style={[styles.notifItem, { borderBottomColor: borderColor }]}>
-                  <View style={[styles.notifIcon, { backgroundColor: n.color + '20' }]}>
-                    <Feather name={n.icon as any} size={18} color={n.color} />
+                  <View style={[styles.notifIcon, { backgroundColor: typeStyle[n.type].color + '20' }]}>
+                    <Feather name={typeStyle[n.type].icon} size={18} color={typeStyle[n.type].color} />
                   </View>
                   <View style={styles.notifText}>
                     <Text style={[styles.notifTitle, { color: titleColor, fontSize: Fonts.sizes.sm * fontSizeScale }]}>
                       {n.title}
                     </Text>
                     <Text style={[styles.notifDesc, { color: subtitleColor, fontSize: Fonts.sizes.xs * fontSizeScale }]}>
-                      {n.desc}
+                      {n.message}
                     </Text>
                     <Text style={[styles.notifTime, { fontSize: Fonts.sizes.xs * fontSizeScale }]}>
-                      {n.time}
+                      {timeAgo(n.createdAt)}
                     </Text>
                   </View>
                 </View>

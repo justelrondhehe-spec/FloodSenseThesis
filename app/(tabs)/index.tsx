@@ -10,7 +10,8 @@ import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AppHeader from '../../components/AppHeader';
 import { Colors, Spacing, Radius, Fonts } from '../../constants/theme';
-import { alerts as initialAlerts } from '../../constants/data'; // Renamed to initialAlerts
+import { alerts as initialAlerts } from '../../constants/data'; // only used for the alert type
+import { useNotifications, timeAgo } from '../../constants/notifications';
 import { useTheme } from '../../constants/ThemeContext';
 
 // ---------------------------------------------------------------------------
@@ -36,23 +37,24 @@ const MAP_LAYERS: MapLayer[] = [
   { key: 'transport', label: 'Transport', icon: 'truck', description: 'Transit & transport network', tileUrl: 'https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png' },
 ];
 
+// Same flood areas and DRRM office as the FloodSense website (GeospatialMonitor.tsx).
 const FLOOD_LOCATIONS = [
-  { latitude: 14.456889476749904, longitude: 120.98302513245899 },
-  { latitude: 14.454809976368963, longitude: 120.983746010595 },
+  { latitude: 14.456840433002867, longitude: 120.98282717398664 },
+  { latitude: 14.454728512437777, longitude: 120.9837726555534 },
 ];
 const FLOOD_RADIUS_METERS = 130;
+const DRRM_OFFICE = { latitude: 14.455053133983723, longitude: 120.98506119230326 };
 
 interface EvacArea {
   name: string;
   coordinate: { latitude: number; longitude: number; };
 }
 
+// Same evacuation areas as the FloodSense website (GeospatialMonitor.tsx).
 const EVAC_AREAS: EvacArea[] = [
-  { name: 'Verdant Court', coordinate: { latitude: 14.454110746204451, longitude: 120.98066721425005 } },
-  { name: 'Rayville Court', coordinate: { latitude: 14.457197537025898, longitude: 120.9810627816938 } },
-  { name: 'Camella IV Court', coordinate: { latitude: 14.457402635001243, longitude: 120.9845678458565 } },
-  { name: 'Camella 3C Court', coordinate: { latitude: 14.45693070132432, longitude: 120.98673503822802 } },
-  { name: 'Manuela 4B Court', coordinate: { latitude: 14.45569782417187, longitude: 120.98859939233947 } },
+  { name: 'Evacuation Area 1', coordinate: { latitude: 14.454053235350871, longitude: 120.98067216651691 } },
+  { name: 'Evacuation Area 2', coordinate: { latitude: 14.454186996765806, longitude: 120.98035432436127 } },
+  { name: 'Evacuation Area 3', coordinate: { latitude: 14.45703539568615, longitude: 120.98108983679258 } },
 ];
 
 const INITIAL_REGION = {
@@ -118,7 +120,12 @@ export default function HomeScreen() {
   const [pickerVisible, setPickerVisible] = useState(false);
 
   // --- ALERTS & NOTIFICATIONS STATE ---
-  const [recentAlerts, setRecentAlerts] = useState(initialAlerts);
+  const { notifications } = useNotifications();
+  const [statusAlerts, setStatusAlerts] = useState<typeof initialAlerts>([]);
+  const recentAlerts = [
+    ...statusAlerts,
+    ...notifications.map((n) => ({ id: n.id, type: n.type, title: n.title, message: n.message, time: timeAgo(n.createdAt) })),
+  ];
   const [showStatusPopup, setShowStatusPopup] = useState(false);
   const prevStatusRef = useRef<string | null>(null);
 
@@ -193,7 +200,7 @@ export default function HomeScreen() {
       };
 
       // Push it to the top of our Recent Alerts list
-      setRecentAlerts(prev => [newAlert, ...prev]);
+      setStatusAlerts(prev => [newAlert, ...prev]);
 
       // Update our ref so we don't trigger it again until it changes again
       prevStatusRef.current = currentStatus.riskText;
@@ -244,7 +251,7 @@ export default function HomeScreen() {
   const currentLayer = MAP_LAYERS.find((layer) => layer.key === activeLayer)!;
   const leafletData = useMemo(() => buildLeafletData({
     floods: FLOOD_LOCATIONS, floodRadius: FLOOD_RADIUS_METERS, evacAreas: EVAC_AREAS,
-    userLocation, route: activeRoute?.coords ?? null, fitId,
+    userLocation, route: activeRoute?.coords ?? null, drrmOffice: DRRM_OFFICE, fitId,
   }), [userLocation, activeRoute, fitId]);
   const displayDistance = activeRoute ? (unitSystem === 'imperial' ? (activeRoute.distance * 0.621371).toFixed(2) + ' mi' : (activeRoute.distance < 1 ? Math.round(activeRoute.distance * 1000) + ' m' : activeRoute.distance.toFixed(2) + ' km')) : '--';
   const displayTime = activeRoute ? `Est. ${activeRoute.time} mins walk` : 'Standby';
@@ -343,6 +350,9 @@ export default function HomeScreen() {
                   <View style={styles.markerWrap}><View style={styles.markerSpacer} /><View style={styles.markerRed}><Feather name="alert-triangle" size={13} color="#fff" /></View><View style={[styles.markerLabel, { backgroundColor: Colors.redDark }]}><Text style={styles.markerLabelText}>FLOOD ZONE</Text></View></View>
                 </Marker>
               ))}
+              <Marker coordinate={DRRM_OFFICE} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false}>
+                <View style={styles.markerWrap}><View style={styles.markerSpacer} /><View style={styles.markerNavy}><Feather name="shield" size={14} color="#fff" /></View><View style={[styles.markerLabel, { backgroundColor: Colors.navyMid }]}><Text style={styles.markerLabelText}>DRRM</Text></View></View>
+              </Marker>
             </MapSurface>
             )}
             <View style={styles.distanceCard}>
@@ -474,8 +484,8 @@ const styles = StyleSheet.create({
   markerWrap: { alignItems: 'center' },
   markerTeal: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.teal, alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: 'rgba(255,255,255,0.6)' },
   markerRed: { width: 30, height: 30, borderRadius: 15, backgroundColor: Colors.red, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)' },
-  markerGreen: { width: 30, height: 30, borderRadius: 15, backgroundColor: Colors.green, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)' },
   markerOrange: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#f39c12', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.6)', },
+  markerNavy: { width: 30, height: 30, borderRadius: 15, backgroundColor: Colors.navyMid, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)' },
   markerLabel: { marginTop: 3, height: 14, paddingHorizontal: 6, justifyContent: 'center', borderRadius: 4 },
   markerSpacer: { height: 17 },
   markerLabelText: { fontSize: 8, color: '#fff', fontWeight: '800', letterSpacing: 0.5 },
