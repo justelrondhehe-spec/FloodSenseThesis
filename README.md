@@ -51,14 +51,15 @@ Teammates using the shared project do **not** need to do this again.
 
 ---
 
-## 🔧 Next Steps / Integrations
+## 🔧 Status
 
-- [x] **Real sensor API** — Replace mock `floodData` in `constants/data.ts` with a live API call
-- [x] **expo-maps / react-native-maps** — Replace mock map with real MapView
-- [ ] **Push notifications** — Use `expo-notifications` for flood alerts
-- [x] **Geolocation** — Use `expo-location` for real user position
-- [ ] **AsyncStorage** — Persist alerts and user preferences
-- [x] **Auth** — Add barangay resident login
+- [x] **Auth** — Supabase email login, email verification, resident profile (name, mobile, address) with privacy consent
+- [x] **Live alerts** — `alerts` table with realtime updates; header bell and Home feed
+- [x] **Push notifications** — `expo-notifications` + database trigger (needs a real build and an EAS project; see below)
+- [x] **Evacuation routing** — walking routes that avoid flood zones (OpenStreetMap-based)
+- [x] **Settings persistence** — dark mode, font size and units are remembered
+- [ ] **Live water level** — sensor integration lives on the `sensor-integration` branch
+- [ ] **Release build** — run `eas init`, add the Supabase key as an EAS environment variable, upload an Android FCM key, then `eas build`
 
 ---
 

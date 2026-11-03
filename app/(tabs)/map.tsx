@@ -417,6 +417,7 @@ export default function MapScreen() {
               <Text style={[styles.navigateBtnText, { fontSize: Fonts.sizes.base * fs }]}>{navigating ? 'Finding route…' : 'Navigate to Nearest Evacuation Area'}</Text>
             </TouchableOpacity>
           </LinearGradient>
+          <Text style={[styles.navigateNote, { color: textSecondary }]}>Route is a guide only. Flood zones are estimates. Follow instructions from barangay officials and avoid flooded streets.</Text>
 
           {/* Legend */}
           <View style={[styles.legend, { backgroundColor: cardBg }]}>
@@ -538,7 +539,8 @@ const styles = StyleSheet.create({
   // Same height as label + gap, placed above the icon so the icon (not the whole pin) sits on the coordinate.
   markerSpacer: { height: 17 },
   markerLabelText: { fontSize: 8, color: '#fff', fontWeight: '800', letterSpacing: 0.5 },
-  navigateBtn:      { borderRadius: Radius.full, overflow: 'hidden', marginBottom: Spacing.base },
+  navigateBtn:      { borderRadius: Radius.full, overflow: 'hidden', marginBottom: Spacing.sm },
+  navigateNote:     { fontSize: 10, textAlign: 'center', marginBottom: Spacing.base, lineHeight: 14 },
   navigateBtnInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16 },
   navigateBtnText:  { fontWeight: '800', color: Colors.textWhite, letterSpacing: 0.3 },
   legend:       { borderRadius: Radius.lg, padding: Spacing.md, marginBottom: Spacing.md },

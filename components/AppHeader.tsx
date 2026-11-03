@@ -22,7 +22,6 @@ export default function AppHeader({ showBadge = true }: AppHeaderProps) {
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   const { alerts, loading: alertsLoading, error: alertsError, unreadCount, markAllRead, refresh } = useAlerts();
-  const [locationEnabled, setLocationEnabled] = useState(false);
 
   const { darkMode, setDarkMode, fontSize, setFontSize, unitSystem, setUnitSystem } = useTheme();
 
@@ -271,19 +270,6 @@ export default function AppHeader({ showBadge = true }: AppHeaderProps) {
                   </Text>
                 </View>
                 <Switch value={pushEnabled} onValueChange={togglePush} disabled={pushBusy}
-                  trackColor={{ false: '#ccc', true: Colors.teal }} thumbColor="#fff" />
-              </View>
-
-              {/* ── Privacy ── */}
-              <Text style={[styles.sectionLabel, { color: sectionColor }]}>PRIVACY</Text>
-              <View style={[styles.settingRow, { borderBottomColor: borderColor }]}>
-                <View style={styles.settingLeft}>
-                  <Feather name="map-pin" size={18} color={Colors.teal} />
-                  <Text style={[styles.settingText, { color: titleColor, fontSize: Fonts.sizes.sm * fontSizeScale }]}>
-                    Share Location
-                  </Text>
-                </View>
-                <Switch value={locationEnabled} onValueChange={setLocationEnabled}
                   trackColor={{ false: '#ccc', true: Colors.teal }} thumbColor="#fff" />
               </View>
 

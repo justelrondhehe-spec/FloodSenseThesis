@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, ActivityIndicator, KeyboardAvoidingView,
   Platform, Alert, Image, ScrollView
 } from "react-native";
-import { router } from "expo-router";
+import { router, type Href } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import type { User } from "@supabase/supabase-js";
 
@@ -25,6 +25,7 @@ export default function AuthScreen() {
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   const cleanEmail = email.trim().toLowerCase();
 
@@ -47,6 +48,14 @@ export default function AuthScreen() {
       setStep("profile");
     }
   };
+
+  // A resident who is already signed in but never finished their profile lands here from the app start.
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user) routeSignedInUser(data.session.user);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const showAuthError = (error: { code?: string; message: string }) => {
     switch (error.code) {
@@ -176,6 +185,10 @@ export default function AuthScreen() {
     }
     if (place.length < 5) {
       Alert.alert("Missing Address", "Please enter your street or house address.");
+      return;
+    }
+    if (!agreed) {
+      Alert.alert("Privacy Notice", "Please read and agree to the Privacy Notice to continue.");
       return;
     }
 
@@ -328,6 +341,22 @@ export default function AuthScreen() {
               value={address}
               onChangeText={setAddress}
             />
+            <TouchableOpacity
+              style={styles.consentRow}
+              onPress={() => setAgreed(!agreed)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: agreed }}
+            >
+              <Feather name={agreed ? "check-square" : "square"} size={22} color={agreed ? "#2EC4B6" : "#999"} />
+              <Text style={styles.consentText}>
+                I have read and agree to the{" "}
+                <Text style={styles.toggleLink} onPress={() => router.push("/privacy" as Href)}>
+                  Privacy Notice
+                </Text>
+                .
+              </Text>
+            </TouchableOpacity>
+
             <TouchableOpacity style={styles.btn} onPress={saveProfileAndFinish} disabled={loading}>
               {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Complete Setup</Text>}
             </TouchableOpacity>
@@ -365,4 +394,6 @@ const styles = StyleSheet.create({
   toggleContainer: { marginTop: 24, alignItems: "center" },
   toggleText: { fontSize: 14, color: "#666" },
   toggleLink: { color: "#2EC4B6", fontWeight: "700" },
+  consentRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 },
+  consentText: { flex: 1, fontSize: 14, color: "#555", lineHeight: 20 },
 });

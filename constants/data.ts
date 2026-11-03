@@ -16,8 +16,8 @@ export const floodData = {
 export const emergencyContacts = [
   {
     id: '1',
-    name: 'NDRRMC Hotline',
-    subtitle: 'National Disaster Risk',
+    name: 'National Emergency Hotline',
+    subtitle: 'Police, Fire & Medical',
     number: '911',
     icon: 'shield',
   },

@@ -6,6 +6,7 @@ import { View } from 'react-native';
 import { supabase } from '../constants/supabase';
 import { AlertsProvider } from '../constants/AlertsContext';
 import { autoRegisterPushNotifications } from '../constants/notifications';
+import { getResident, isProfileComplete } from '../constants/residents';
 
 function AppContent() {
   const { darkMode } = useTheme();
@@ -22,6 +23,18 @@ function AppContent() {
         // not be called from inside this callback.
         if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
           setTimeout(autoRegisterPushNotifications, 0);
+        }
+        // App opened while signed in: a resident who never finished their profile goes back to finish it.
+        // (Only on startup; during login the login screen manages this itself.)
+        if (event === 'INITIAL_SESSION') {
+          const userId = session.user.id;
+          setTimeout(async () => {
+            try {
+              if (!isProfileComplete(await getResident(userId))) router.replace('/(auth)/login' as Href);
+            } catch {
+              // offline or table unavailable: let the resident in rather than lock them out
+            }
+          }, 0);
         }
         return;
       }

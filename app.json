@@ -14,11 +14,15 @@
     ],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.floodsense.app"
+      "bundleIdentifier": "com.floodsense.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "FloodSense uses your location to show where you are on the map and to find the safest walking route to an evacuation area."
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0D3B5E"
+        "backgroundColor": "#0D3B5E",
+        "foregroundImage": "./assets/icon.png"
       },
       "package": "com.floodsense.app"
     },
@@ -30,6 +34,13 @@
         "expo-notifications",
         {
           "color": "#2EC4B6"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "FloodSense uses your location to show where you are on the map and to find the safest walking route to an evacuation area.",
+          "isAndroidBackgroundLocationEnabled": false
         }
       ]
     ],

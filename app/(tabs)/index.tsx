@@ -345,6 +345,7 @@ export default function HomeScreen() {
               <Text style={[styles.navigateBtnText, { fontSize: Fonts.sizes.base * fs }]}>{navigating ? 'Finding route…' : 'Navigate to Nearest Evacuation Area'}</Text>
             </TouchableOpacity>
           </LinearGradient>
+          <Text style={[styles.navigateNote, { color: textSecondary }]}>Route is a guide only. Flood zones are estimates. Follow instructions from barangay officials and avoid flooded streets.</Text>
         </View>
 
         {/* Recent alerts, live from Supabase */}
@@ -483,6 +484,7 @@ const styles = StyleSheet.create({
   locationLabel: { position: 'absolute', bottom: 8, left: 8, backgroundColor: 'rgba(13,59,94,0.85)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   locationLabelText: { fontSize: 10, color: Colors.textWhite, fontWeight: '600' },
   navigateBtn: { borderRadius: Radius.full, overflow: 'hidden' },
+  navigateNote: { fontSize: 10, textAlign: 'center', marginTop: 8, lineHeight: 14 },
   navigateBtnInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14 },
   navigateBtnText: { fontWeight: '800', color: Colors.textWhite, letterSpacing: 0.3 },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
