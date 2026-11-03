@@ -1,5 +1,4 @@
 import * as Linking from 'expo-linking';
-import { supabase } from './supabase';
 
 export const AUTH_CALLBACK_PATH = 'auth/callback';
 
@@ -11,31 +10,19 @@ export const AUTH_CALLBACK_PATH = 'auth/callback';
  */
 export const getEmailRedirectUrl = () => Linking.createURL(AUTH_CALLBACK_PATH);
 
-function readParams(url: string): URLSearchParams {
-  // Supabase returns tokens in the URL fragment (#access_token=...) and errors in either place.
+/**
+ * Reads the result Supabase attached to the link it redirected to.
+ * Supabase confirms the email on its own server before redirecting, so success needs no further work here;
+ * an expired or already-used link comes back as an error in the URL.
+ */
+export function readConfirmationResult(url: string): { ok: true } | { ok: false; message: string } {
   const [beforeHash, hash = ''] = url.split('#');
   const query = beforeHash.includes('?') ? beforeHash.split('?')[1] : '';
   const params = new URLSearchParams(query);
   new URLSearchParams(hash).forEach((value, key) => params.set(key, value));
-  return params;
-}
 
-/**
- * Signs the resident in from the link in their confirmation email.
- * Returns false when the URL carries no session (for example the screen was opened by hand).
- * Throws with Supabase's message when the link is expired or invalid.
- */
-export async function createSessionFromUrl(url: string): Promise<boolean> {
-  const params = readParams(url);
-
-  const errorDescription = params.get('error_description');
-  if (errorDescription) throw new Error(errorDescription.replace(/\+/g, ' '));
-
-  const accessToken = params.get('access_token');
-  const refreshToken = params.get('refresh_token');
-  if (!accessToken || !refreshToken) return false;
-
-  const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
-  if (error) throw error;
-  return true;
+  const description = params.get('error_description');
+  if (description) return { ok: false, message: description.replace(/\+/g, ' ') };
+  if (params.get('error')) return { ok: false, message: 'This confirmation link is not valid.' };
+  return { ok: true };
 }

@@ -4,7 +4,7 @@ import {
   StyleSheet, ActivityIndicator, KeyboardAvoidingView,
   Platform, Alert, Image, ScrollView
 } from "react-native";
-import { router, type Href } from "expo-router";
+import { router, useLocalSearchParams, type Href } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import type { User } from "@supabase/supabase-js";
 
@@ -16,6 +16,8 @@ const MIN_PASSWORD_LENGTH = 8;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function AuthScreen() {
+  // Set to "1" by the email-confirmation screen once the resident's email has been verified.
+  const { verified } = useLocalSearchParams<{ verified?: string }>();
   const [step, setStep] = useState<"auth" | "verify" | "profile">("auth");
   const [mode, setMode] = useState<"login" | "register">("login");
 
@@ -240,6 +242,13 @@ export default function AuthScreen() {
           {step === "profile" && "Tell us about yourself so we can reach you during floods"}
         </Text>
 
+        {step === "auth" && verified === "1" && (
+          <View style={styles.verifiedBanner}>
+            <Feather name="check-circle" size={18} color="#1E8449" />
+            <Text style={styles.verifiedText}>Email verified! Log in to continue.</Text>
+          </View>
+        )}
+
         {step === "auth" && (
           <>
             <TextInput
@@ -400,6 +409,8 @@ const styles = StyleSheet.create({
   toggleContainer: { marginTop: 24, alignItems: "center" },
   toggleText: { fontSize: 14, color: "#666" },
   toggleLink: { color: "#2EC4B6", fontWeight: "700" },
+  verifiedBanner: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#E8F8F0", borderRadius: 10, padding: 12, marginBottom: 16 },
+  verifiedText: { flex: 1, color: "#1E8449", fontWeight: "600", fontSize: 14 },
   consentRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 },
   consentText: { flex: 1, fontSize: 14, color: "#555", lineHeight: 20 },
 });
