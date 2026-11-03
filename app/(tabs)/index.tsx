@@ -12,6 +12,7 @@ import AppHeader from '../../components/AppHeader';
 import { Colors, Spacing, Radius, Fonts } from '../../constants/theme';
 import { alerts as initialAlerts } from '../../constants/data'; // Renamed to initialAlerts
 import { useTheme } from '../../constants/ThemeContext';
+import { useLiveSensors, pickWorstSensor } from '../../constants/sensors';
 
 // ---------------------------------------------------------------------------
 // Types & Map Layers
@@ -63,10 +64,11 @@ const INITIAL_REGION = {
 // ---------------------------------------------------------------------------
 // Widgets
 // ---------------------------------------------------------------------------
-function WaterLevelWidget({ unitSystem, level }: { unitSystem: string; level: number }) {
-  const displayLevel = unitSystem === 'imperial' ? (level * 0.0328084).toFixed(2) : (level / 100).toFixed(2);
+// level is in cm, or null when no sensor is reporting. scaleMax is the level (cm) that fills the gauge.
+function WaterLevelWidget({ unitSystem, level, scaleMax }: { unitSystem: string; level: number | null; scaleMax: number }) {
+  const displayLevel = level === null ? '--' : unitSystem === 'imperial' ? (level * 0.0328084).toFixed(2) : (level / 100).toFixed(2);
   const unitLabel = unitSystem === 'imperial' ? 'feet' : 'meters';
-  const fillPercentage = Math.min(Math.max((level / 200) * 100, 10), 100); 
+  const fillPercentage = level === null ? 0 : Math.min(Math.max((level / scaleMax) * 100, 10), 100);
 
   return (
     <View style={styles.waterCard}>
@@ -78,7 +80,7 @@ function WaterLevelWidget({ unitSystem, level }: { unitSystem: string; level: nu
       </View>
       <TouchableOpacity style={styles.trendBadge}>
         <Feather name="activity" size={12} color={Colors.textWhite} />
-        <Text style={styles.trendText}> Live Data</Text>
+        <Text style={styles.trendText}>{level === null ? ' No live data' : ' Live Data'}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -123,7 +125,10 @@ export default function HomeScreen() {
   const prevStatusRef = useRef<string | null>(null);
 
   // --- SENSOR & LOCATION STATE ---
-  const [liveWaterLevel, setLiveWaterLevel] = useState<number>(0);
+  // Live level (cm) from the website's sensors; null while none is reporting
+  const { sensors } = useLiveSensors();
+  const liveSensor = pickWorstSensor(sensors);
+  const liveWaterLevel: number | null = liveSensor ? (liveSensor.reading as number) : null;
   const mapRef = useRef<any>(null);
   const [userLocation, setUserLocation] = useState<any>(null);
   const [activeRoute, setActiveRoute] = useState<{coords: any[], distance: number, time: number, name: string} | null>(null);
@@ -131,22 +136,35 @@ export default function HomeScreen() {
   const [navigating, setNavigating] = useState(false);
 
   // 1. Logic for categorizing the flood risk based on water level
-  const getFloodStatus = (level: number) => {
-    if (level >= 190) {
+  // The tiers use the same warning and danger levels as the website (set per sensor in Supabase):
+  // at or above danger = HIGH, at or above warning = MODERATE, half of warning or more = ADVISORY.
+  const warnLevel = liveSensor?.warnLevel ?? 30;
+  const dangerLevel = liveSensor?.dangerLevel ?? 60;
+  const getFloodStatus = (level: number | null) => {
+    if (level === null) {
+      // Don't claim "normal" when no sensor is reporting
+      return {
+        gradient: ['#64748B', '#475569', '#334155'],
+        topBadgeColor: '#64748B', iconName: 'wifi-off' as const,
+        riskText: 'NO LIVE DATA', warnLabel: 'SENSORS OFFLINE', warnDesc: 'No recent sensor readings. Follow barangay advisories.',
+        alertType: 'notice'
+      };
+    }
+    if (level >= dangerLevel) {
       return {
         gradient: [Colors.redLight || '#ff7b72', Colors.red, Colors.redDark || '#8a0000'],
         topBadgeColor: Colors.red, iconName: 'alert-octagon' as const,
         riskText: 'HIGH RISK', warnLabel: 'CRITICAL WARNING', warnDesc: 'Severe flood warning — Evacuate immediately',
         alertType: 'warning'
       };
-    } else if (level >= 150) {
+    } else if (level >= warnLevel) {
       return {
         gradient: [Colors.orangeLight, Colors.orange, Colors.orangeDark],
         topBadgeColor: Colors.warning || Colors.orange, iconName: 'alert-triangle' as const,
         riskText: 'MODERATE RISK', warnLabel: 'FLOOD WARNING', warnDesc: 'Moderate flood risk — Stay alert',
         alertType: 'warning'
       };
-    } else if (level >= 100) {
+    } else if (level >= warnLevel * 0.5) {
       return {
         gradient: ['#1B4F72', '#0D3B5E', '#0A2640'], 
         topBadgeColor: Colors.teal, iconName: 'info' as const,
@@ -165,8 +183,7 @@ export default function HomeScreen() {
 
   const currentStatus = getFloodStatus(liveWaterLevel);
 
-  // 2. Listen for sensor updates
-  // TODO: subscribe to the Supabase sensor table (Realtime) and call setLiveWaterLevel.
+  // 2. Sensor updates come from useLiveSensors() above (refreshed every 10 seconds)
 
   // 3. Status Change Detection & Alert Generation
   useEffect(() => {
@@ -178,6 +195,14 @@ export default function HomeScreen() {
 
     // If the status text changed (e.g. went from LOW RISK to ADVISORY)
     if (currentStatus.riskText !== prevStatusRef.current) {
+      // Quiet changes: losing the sensors, or the first reading arriving and being normal
+      const quiet =
+        currentStatus.riskText === 'NO LIVE DATA' ||
+        (prevStatusRef.current === 'NO LIVE DATA' && currentStatus.riskText === 'LOW RISK');
+      if (quiet) {
+        prevStatusRef.current = currentStatus.riskText;
+        return;
+      }
       
       // Show the massive popup to the user
       setShowStatusPopup(true);
@@ -286,7 +311,7 @@ export default function HomeScreen() {
             </View>
           </View>
           <View style={styles.statsRow}>
-            <WaterLevelWidget unitSystem={unitSystem} level={liveWaterLevel} />
+            <WaterLevelWidget unitSystem={unitSystem} level={liveWaterLevel} scaleMax={dangerLevel * 1.25} />
           </View>
         </LinearGradient>
 
