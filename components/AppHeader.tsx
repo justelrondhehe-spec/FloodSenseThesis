@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
   Modal, ScrollView, Switch, Alert,
@@ -8,6 +8,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Spacing, Fonts } from '../constants/theme';
 import { useTheme } from '../constants/ThemeContext';
 import { supabase } from '../constants/supabase';
+import { useAlerts } from '../constants/AlertsContext';
+import { ALERT_APPEARANCE, timeAgo } from '../constants/alerts';
+import { hasPushRegistration, registerForPushNotifications, unregisterPushNotifications } from '../constants/notifications';
 
 type AppHeaderProps = {
   showBadge?: boolean;
@@ -16,8 +19,9 @@ type AppHeaderProps = {
 export default function AppHeader({ showBadge = true }: AppHeaderProps) {
   const [notifVisible, setNotifVisible] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
-  const [pushEnabled, setPushEnabled] = useState(true);
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  const { alerts, loading: alertsLoading, error: alertsError, unreadCount, markAllRead, refresh } = useAlerts();
   const [locationEnabled, setLocationEnabled] = useState(false);
 
   const { darkMode, setDarkMode, fontSize, setFontSize, unitSystem, setUnitSystem } = useTheme();
@@ -30,8 +34,43 @@ export default function AppHeader({ showBadge = true }: AppHeaderProps) {
 
   const fontSizeScale = fontSize === 'small' ? 0.85 : fontSize === 'large' ? 1.2 : 1;
 
+  useEffect(() => {
+    hasPushRegistration().then(setPushEnabled);
+  }, []);
+
+  const openNotifications = () => {
+    setNotifVisible(true);
+    markAllRead();
+    refresh();
+  };
+
+  const togglePush = async (enabled: boolean) => {
+    if (pushBusy) return;
+    setPushBusy(true);
+    try {
+      if (enabled) {
+        const token = await registerForPushNotifications();
+        if (token) {
+          setPushEnabled(true);
+        } else {
+          setPushEnabled(false);
+          Alert.alert(
+            'Could Not Turn On Alerts',
+            'Allow notifications for FloodSense in your phone settings, and make sure you are on a real device with internet.'
+          );
+        }
+      } else {
+        await unregisterPushNotifications(true);
+        setPushEnabled(false);
+      }
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
   const handleLogout = async () => {
     try {
+      await unregisterPushNotifications(); // must happen while still signed in
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       setSettingsVisible(false); // Close the sheet as they log out
@@ -52,12 +91,6 @@ export default function AppHeader({ showBadge = true }: AppHeaderProps) {
     );
   };
 
-  const notifications = [
-    { id: '1', icon: 'alert-triangle', color: Colors.orange, title: 'Water Level Rising', desc: 'Level reached 1.8m in Barangay Pamplona Tres', time: '2 mins ago' },
-    { id: '2', icon: 'alert-circle', color: '#C0392B', title: 'Flood Warning Issued', desc: 'Moderate flooding expected in low-lying areas', time: '15 mins ago' },
-    { id: '3', icon: 'check-circle', color: Colors.teal, title: 'Sensor Online', desc: 'All IoT sensors reporting normally', time: '1 hour ago' },
-  ];
-
   return (
     <>
       <LinearGradient colors={[Colors.navyDark, Colors.navyMid]} style={styles.header}>
@@ -76,9 +109,9 @@ export default function AppHeader({ showBadge = true }: AppHeaderProps) {
 
         {/* Actions */}
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => setNotifVisible(true)}>
+          <TouchableOpacity style={styles.iconBtn} onPress={openNotifications}>
             <Feather name="bell" size={18} color={Colors.textWhite} />
-            {showBadge && <View style={styles.badge} />}
+            {showBadge && unreadCount > 0 && <View style={styles.badge} />}
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn} onPress={() => setSettingsVisible(true)}>
             <Feather name="settings" size={18} color={Colors.textWhite} />
@@ -101,24 +134,40 @@ export default function AppHeader({ showBadge = true }: AppHeaderProps) {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              {notifications.map((n) => (
-                <View key={n.id} style={[styles.notifItem, { borderBottomColor: borderColor }]}>
-                  <View style={[styles.notifIcon, { backgroundColor: n.color + '20' }]}>
-                    <Feather name={n.icon as any} size={18} color={n.color} />
+              {alertsLoading && alerts.length === 0 && (
+                <Text style={[styles.notifDesc, { color: subtitleColor, textAlign: 'center', padding: Spacing.lg }]}>Loading alerts…</Text>
+              )}
+              {!alertsLoading && alertsError && alerts.length === 0 && (
+                <Text style={[styles.notifDesc, { color: subtitleColor, textAlign: 'center', padding: Spacing.lg }]}>
+                  Could not load alerts. Check your connection and try again.
+                </Text>
+              )}
+              {!alertsLoading && !alertsError && alerts.length === 0 && (
+                <Text style={[styles.notifDesc, { color: subtitleColor, textAlign: 'center', padding: Spacing.lg }]}>
+                  No alerts yet. You will see flood warnings and updates here.
+                </Text>
+              )}
+              {alerts.map((n) => {
+                const look = ALERT_APPEARANCE[n.type];
+                return (
+                  <View key={n.id} style={[styles.notifItem, { borderBottomColor: borderColor }]}>
+                    <View style={[styles.notifIcon, { backgroundColor: look.color + '20' }]}>
+                      <Feather name={look.icon} size={18} color={look.color} />
+                    </View>
+                    <View style={styles.notifText}>
+                      <Text style={[styles.notifTitle, { color: titleColor, fontSize: Fonts.sizes.sm * fontSizeScale }]}>
+                        {n.title}
+                      </Text>
+                      <Text style={[styles.notifDesc, { color: subtitleColor, fontSize: Fonts.sizes.xs * fontSizeScale }]}>
+                        {n.message}
+                      </Text>
+                      <Text style={[styles.notifTime, { fontSize: Fonts.sizes.xs * fontSizeScale }]}>
+                        {timeAgo(n.created_at)}
+                      </Text>
+                    </View>
                   </View>
-                  <View style={styles.notifText}>
-                    <Text style={[styles.notifTitle, { color: titleColor, fontSize: Fonts.sizes.sm * fontSizeScale }]}>
-                      {n.title}
-                    </Text>
-                    <Text style={[styles.notifDesc, { color: subtitleColor, fontSize: Fonts.sizes.xs * fontSizeScale }]}>
-                      {n.desc}
-                    </Text>
-                    <Text style={[styles.notifTime, { fontSize: Fonts.sizes.xs * fontSizeScale }]}>
-                      {n.time}
-                    </Text>
-                  </View>
-                </View>
-              ))}
+                );
+              })}
             </ScrollView>
           </View>
         </View>
@@ -221,17 +270,7 @@ export default function AppHeader({ showBadge = true }: AppHeaderProps) {
                     Push Notifications
                   </Text>
                 </View>
-                <Switch value={pushEnabled} onValueChange={setPushEnabled}
-                  trackColor={{ false: '#ccc', true: Colors.teal }} thumbColor="#fff" />
-              </View>
-              <View style={[styles.settingRow, { borderBottomColor: borderColor }]}>
-                <View style={styles.settingLeft}>
-                  <Feather name="volume-2" size={18} color={Colors.teal} />
-                  <Text style={[styles.settingText, { color: titleColor, fontSize: Fonts.sizes.sm * fontSizeScale }]}>
-                    Alert Sounds
-                  </Text>
-                </View>
-                <Switch value={soundEnabled} onValueChange={setSoundEnabled}
+                <Switch value={pushEnabled} onValueChange={togglePush} disabled={pushBusy}
                   trackColor={{ false: '#ccc', true: Colors.teal }} thumbColor="#fff" />
               </View>
 

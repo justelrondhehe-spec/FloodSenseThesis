@@ -25,7 +25,13 @@
     "plugins": [
       "expo-router",
       "expo-web-browser",
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "expo-notifications",
+        {
+          "color": "#2EC4B6"
+        }
+      ]
     ],
     "scheme": "floodsense",
     "experiments": {

@@ -10,7 +10,8 @@ import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AppHeader from '../../components/AppHeader';
 import { Colors, Spacing, Radius, Fonts } from '../../constants/theme';
-import { alerts as initialAlerts } from '../../constants/data'; // Renamed to initialAlerts
+import { useAlerts } from '../../constants/AlertsContext';
+import { ALERT_APPEARANCE, FloodAlert, timeAgo } from '../../constants/alerts';
 import { useTheme } from '../../constants/ThemeContext';
 
 // ---------------------------------------------------------------------------
@@ -84,12 +85,8 @@ function WaterLevelWidget({ unitSystem, level }: { unitSystem: string; level: nu
   );
 }
 
-function AlertItem({ alert, cardBg, textPrimary, textSecondary }: { alert: any; cardBg: string; textPrimary: string; textSecondary: string; }) {
-  const colorMap: any = { warning: Colors.orange, info: Colors.teal, safe: Colors.green, notice: Colors.navyLight };
-  const iconMap: any = { warning: 'alert-triangle', info: 'info', safe: 'check-circle', notice: 'info' };
-  
-  const color = colorMap[alert.type] || Colors.navyLight;
-  const icon = iconMap[alert.type] || 'bell';
+function AlertItem({ alert, cardBg, textSecondary }: { alert: FloodAlert; cardBg: string; textSecondary: string; }) {
+  const { color, icon } = ALERT_APPEARANCE[alert.type];
 
   return (
     <View style={[styles.alertCard, { borderLeftColor: color, backgroundColor: cardBg }]}>
@@ -101,7 +98,7 @@ function AlertItem({ alert, cardBg, textPrimary, textSecondary }: { alert: any; 
         <Text style={[styles.alertMsg, { color: textSecondary }]}>{alert.message}</Text>
         <View style={styles.alertTime}>
           <Feather name="clock" size={10} color={textSecondary} />
-          <Text style={[styles.alertTimeText, { color: textSecondary }]}> {alert.time}</Text>
+          <Text style={[styles.alertTimeText, { color: textSecondary }]}> {timeAgo(alert.created_at)}</Text>
         </View>
       </View>
     </View>
@@ -118,7 +115,7 @@ export default function HomeScreen() {
   const [pickerVisible, setPickerVisible] = useState(false);
 
   // --- ALERTS & NOTIFICATIONS STATE ---
-  const [recentAlerts, setRecentAlerts] = useState(initialAlerts);
+  const { alerts: recentAlerts, loading: alertsLoading, error: alertsError, unreadCount } = useAlerts();
   const [showStatusPopup, setShowStatusPopup] = useState(false);
   const prevStatusRef = useRef<string | null>(null);
 
@@ -168,7 +165,7 @@ export default function HomeScreen() {
   // 2. Listen for sensor updates
   // TODO: subscribe to the Supabase sensor table (Realtime) and call setLiveWaterLevel.
 
-  // 3. Status Change Detection & Alert Generation
+  // 3. Status change detection (shows the popup; alerts themselves come from Supabase)
   useEffect(() => {
     // If this is the very first render, just set the ref and don't pop up
     if (prevStatusRef.current === null) {
@@ -181,19 +178,6 @@ export default function HomeScreen() {
       
       // Show the massive popup to the user
       setShowStatusPopup(true);
-
-      // Create a new alert object
-      // Create a new alert object
-      const newAlert = {
-        id: Date.now().toString(),
-        type: currentStatus.alertType as 'warning' | 'info' | 'safe' | 'notice', // <-- Added type casting here
-        title: `Status Changed: ${currentStatus.warnLabel}`,
-        message: currentStatus.warnDesc,
-        time: 'Just now'
-      };
-
-      // Push it to the top of our Recent Alerts list
-      setRecentAlerts(prev => [newAlert, ...prev]);
 
       // Update our ref so we don't trigger it again until it changes again
       prevStatusRef.current = currentStatus.riskText;
@@ -363,17 +347,30 @@ export default function HomeScreen() {
           </LinearGradient>
         </View>
 
-        {/* Recent Alerts Section using dynamic state! */}
+        {/* Recent alerts, live from Supabase */}
         <View style={styles.alertsSection}>
           <View style={styles.alertsSectionHeader}>
             <Text style={[styles.sectionTitle, { color: textPrimary, fontSize: Fonts.sizes.md * fs }]}>Recent Alerts</Text>
             <View style={styles.alertBadgeBtn}>
               <Feather name="bell" size={16} color={Colors.textWhite} />
-              <View style={styles.alertBadge}><Text style={styles.alertBadgeText}>{recentAlerts.length}</Text></View>
+              {unreadCount > 0 && <View style={styles.alertBadge}><Text style={styles.alertBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text></View>}
             </View>
           </View>
-          {recentAlerts.map((alert) => (
-            <AlertItem key={alert.id} alert={alert} cardBg={cardBg} textPrimary={textPrimary} textSecondary={textSecondary} />
+          {alertsLoading && recentAlerts.length === 0 && (
+            <Text style={[styles.alertMsg, { color: textSecondary, textAlign: 'center', padding: Spacing.base }]}>Loading alerts…</Text>
+          )}
+          {!alertsLoading && alertsError && recentAlerts.length === 0 && (
+            <Text style={[styles.alertMsg, { color: textSecondary, textAlign: 'center', padding: Spacing.base }]}>
+              Could not load alerts. Check your connection and reopen the app.
+            </Text>
+          )}
+          {!alertsLoading && !alertsError && recentAlerts.length === 0 && (
+            <Text style={[styles.alertMsg, { color: textSecondary, textAlign: 'center', padding: Spacing.base }]}>
+              No alerts right now. Flood warnings and updates will appear here.
+            </Text>
+          )}
+          {recentAlerts.slice(0, 5).map((alert) => (
+            <AlertItem key={alert.id} alert={alert} cardBg={cardBg} textSecondary={textSecondary} />
           ))}
         </View>
 

@@ -4,6 +4,8 @@ import { StatusBar } from 'expo-status-bar';
 import { ThemeProvider, useTheme } from '../constants/ThemeContext';
 import { View } from 'react-native';
 import { supabase } from '../constants/supabase';
+import { AlertsProvider } from '../constants/AlertsContext';
+import { autoRegisterPushNotifications } from '../constants/notifications';
 
 function AppContent() {
   const { darkMode } = useTheme();
@@ -14,8 +16,15 @@ function AppContent() {
     // Redirecting before the navigator mounts throws, so wait until it is ready.
     if (!navigationReady) return;
 
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) return;
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        // Signed in: make sure this phone can receive flood alerts. Deferred because Supabase must
+        // not be called from inside this callback.
+        if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+          setTimeout(autoRegisterPushNotifications, 0);
+        }
+        return;
+      }
 
       router.replace('/(auth)/login' as Href);
     });
@@ -36,7 +45,9 @@ function AppContent() {
 export default function RootLayout() {
   return (
     <ThemeProvider>
-      <AppContent />
+      <AlertsProvider>
+        <AppContent />
+      </AlertsProvider>
     </ThemeProvider>
   );
 }

@@ -13,37 +13,6 @@ export const floodData = {
   status: 'LIVE',
 };
 
-export const alerts = [
-  {
-    id: '1',
-    type: 'warning' as const,
-    title: 'Flood Warning',
-    message: 'Water level rising. Monitor situation closely.',
-    time: '15 mins ago',
-  },
-  {
-    id: '2',
-    type: 'info' as const,
-    title: 'Weather Update',
-    message: 'Moderate rainfall expected in the next 2 hours.',
-    time: '1 hour ago',
-  },
-  {
-    id: '3',
-    type: 'safe' as const,
-    title: 'All Clear',
-    message: 'Water levels have receded to safe levels.',
-    time: '3 hours ago',
-  },
-  {
-    id: '4',
-    type: 'notice' as const,
-    title: 'System Notice',
-    message: 'Regular monitoring active. Stay safe!',
-    time: '6 hours ago',
-  },
-];
-
 export const emergencyContacts = [
   {
     id: '1',

@@ -31,11 +31,23 @@ Built with **Expo + React Native + TypeScript** and powered by **Supabase** for 
 # 1. Install dependencies
 npm install
 
-# 2. Start dev server
-npx expo start
+# 2. Create your local .env from the example (the real .env is git-ignored)
+#    Windows (PowerShell / cmd):  copy .env.example .env
+#    macOS / Linux:               cp .env.example .env
 
-# 3. Scan the QR code with Expo Go
+# 3. Start dev server (--clear makes Expo pick up the .env)
+npx expo start --clear
+
+# 4. Scan the QR code with Expo Go
 ```
+
+If login fails with "Invalid API key" or the console says `Missing EXPO_PUBLIC_SUPABASE_ANON_KEY`,
+the `.env` file is missing, has a space or quotes around the key, or Expo was not restarted with `--clear`.
+
+### Database (one-time, only for whoever owns the Supabase project)
+
+Run `supabase/residents.sql` and `supabase/alerts.sql` in the Supabase SQL Editor.
+Teammates using the shared project do **not** need to do this again.
 
 ---
 
