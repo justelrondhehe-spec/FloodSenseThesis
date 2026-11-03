@@ -19,10 +19,11 @@ export type LeafletData = {
 
 export const INITIAL_CENTER: [number, number] = [14.455849726559434, 120.98338557152699];
 
-type TileSource = { url: string; opacity?: number; subdomains?: string; attribution?: string };
+type TileSource = { url: string; opacity?: number; subdomains?: string; attribution?: string; maxNativeZoom?: number };
 
 const OSM = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-const CARTO = '&copy; OpenStreetMap contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+const CYCLOSM = '&copy; <a href="https://www.cyclosm.org">CyclOSM</a> | Map data &copy; OpenStreetMap contributors';
+const MEMOMAPS = 'Map &copy; <a href="https://memomaps.de">memomaps.de</a> | Data &copy; OpenStreetMap contributors';
 const ESRI = 'Tiles &copy; Esri';
 
 // Every map style is drawn by Leaflet, so pins and circles are placed by exact map geometry
@@ -42,11 +43,10 @@ export const LEAFLET_LAYERS: Record<LeafletLayerKey, TileSource[]> = {
     },
   ],
   cycle: [
-    { url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', subdomains: 'abcd', attribution: CARTO },
-    { url: 'https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png', opacity: 0.8, attribution: '&copy; waymarkedtrails.org' },
+    { url: 'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png', subdomains: 'abc', attribution: CYCLOSM },
   ],
   transport: [
-    { url: 'https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png', subdomains: 'abcd', attribution: CARTO },
+    { url: 'https://tileserver.memomaps.de/tilegen/{z}/{x}/{y}.png', maxNativeZoom: 18, attribution: MEMOMAPS },
   ],
 };
 
@@ -97,6 +97,7 @@ export const LEAFLET_HTML = `<!DOCTYPE html>
       LAYERS[key].forEach(function (t, i) {
         L.tileLayer(t.url, {
           maxZoom: 19,
+          maxNativeZoom: t.maxNativeZoom || 19,
           subdomains: t.subdomains || 'abc',
           opacity: t.opacity || 1,
           attribution: t.attribution || '',
