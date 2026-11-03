@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleProp, ViewStyle } from 'react-native';
-import { WebView, WebViewMessageEvent } from 'react-native-webview';
+import { WebView as RNWebView, WebViewMessageEvent } from 'react-native-webview';
 import { LEAFLET_HTML, LeafletData } from './leafletHtml';
 
 type Props = {
@@ -9,9 +9,13 @@ type Props = {
   onPress?: () => void;
 };
 
+// react-native-webview 14's class typings don't match the React 19.3 JSX types, so JSX props resolve to `never`.
+// Runtime is unaffected; this only relaxes the compile-time check for this one component.
+const WebView = RNWebView as unknown as React.ComponentType<any>;
+
 // Native (iOS/Android): Leaflet runs inside a WebView.
 export default function LeafletMap({ data, style, onPress }: Props) {
-  const webRef = useRef<WebView>(null);
+  const webRef = useRef<RNWebView>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {

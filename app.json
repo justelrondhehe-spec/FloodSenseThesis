@@ -6,9 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "backgroundColor": "#0D3B5E"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -21,15 +18,23 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0D3B5E",
-        "foregroundImage": "./assets/icon.png"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
       },
       "package": "com.floodsense.app"
     },
     "plugins": [
       "expo-router",
       "expo-web-browser",
-      "expo-status-bar",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF"
+        }
+      ],
       [
         "expo-notifications",
         {
@@ -47,6 +52,12 @@
     "scheme": "floodsense",
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ebe43adf-76f5-4035-a865-224d48584f1b"
+      }
     }
   }
 }
