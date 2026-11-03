@@ -272,8 +272,8 @@ export default function MapScreen() {
           {/* Navigate button */}
           <LinearGradient colors={[Colors.navyMid, Colors.teal]} style={styles.navigateBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
             <TouchableOpacity style={styles.navigateBtnInner} onPress={handleNavigate} disabled={navigating} activeOpacity={0.85}>
-              <Feather name="navigation" size={18} color={Colors.textWhite} />
-              <Text style={[styles.navigateBtnText, { fontSize: Fonts.sizes.base * fs }]}>{navigating ? 'Finding route…' : 'Navigate to Nearest Evacuation Area'}</Text>
+              <Feather name="navigation" size={16} color={Colors.textWhite} />
+              <Text style={[styles.navigateBtnText, { fontSize: 13 * fs }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{navigating ? 'Finding route…' : 'Navigate to Nearest Evacuation Area'}</Text>
             </TouchableOpacity>
           </LinearGradient>
           <Text style={[styles.navigateNote, { color: textSecondary }]}>Route is a guide only. Flood zones are estimates. Follow instructions from barangay officials and avoid flooded streets.</Text>
@@ -390,8 +390,8 @@ const styles = StyleSheet.create({
   mapLabelText: { fontSize: 10, color: Colors.textWhite, fontWeight: '600' },
   navigateBtn:      { borderRadius: Radius.full, overflow: 'hidden', marginBottom: Spacing.sm },
   navigateNote:     { fontSize: 10, textAlign: 'center', marginBottom: Spacing.base, lineHeight: 14 },
-  navigateBtnInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16 },
-  navigateBtnText:  { fontWeight: '800', color: Colors.textWhite, letterSpacing: 0.3 },
+  navigateBtnInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, paddingHorizontal: Spacing.base },
+  navigateBtnText:  { flexShrink: 1, fontWeight: '700', color: Colors.textWhite, letterSpacing: 0.2 },
   legend:       { borderRadius: Radius.lg, padding: Spacing.md, marginBottom: Spacing.md },
   legendTitle:  { fontWeight: '700', marginBottom: 8 },
   legendItems:  { flexDirection: 'row', gap: Spacing.base, flexWrap: 'wrap' },

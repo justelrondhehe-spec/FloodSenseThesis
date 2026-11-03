@@ -258,7 +258,7 @@ export default function HomeScreen() {
         <View style={[styles.greetRow, { backgroundColor: cardBg, borderBottomColor: borderColor }]}>
           <View>
             <Text style={[styles.greetSub, { color: textSecondary, fontSize: Fonts.sizes.xs * fs }]}>GOOD DAY</Text>
-            <Text style={[styles.greetTitle, { color: textPrimary, fontSize: Fonts.sizes.lg * fs }]}>Stay safe, Resident 👋</Text>
+            <Text style={[styles.greetTitle, { color: textPrimary, fontSize: Fonts.sizes.lg * fs }]}>Stay safe, Resident</Text>
           </View>
           <View style={[styles.warnBadge, { borderColor: currentStatus.topBadgeColor, backgroundColor: `${currentStatus.topBadgeColor}15` }]}>
             <Feather name={currentStatus.iconName} size={13} color={currentStatus.topBadgeColor} />
@@ -308,8 +308,8 @@ export default function HomeScreen() {
 
           <LinearGradient colors={[Colors.navyMid, Colors.teal]} style={styles.navigateBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
             <TouchableOpacity style={styles.navigateBtnInner} onPress={handleNavigate} disabled={navigating}>
-              <Feather name="navigation" size={18} color={Colors.textWhite} />
-              <Text style={[styles.navigateBtnText, { fontSize: Fonts.sizes.base * fs }]}>{navigating ? 'Finding route…' : 'Navigate to Nearest Evacuation Area'}</Text>
+              <Feather name="navigation" size={16} color={Colors.textWhite} />
+              <Text style={[styles.navigateBtnText, { fontSize: 13 * fs }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{navigating ? 'Finding route…' : 'Navigate to Nearest Evacuation Area'}</Text>
             </TouchableOpacity>
           </LinearGradient>
           <Text style={[styles.navigateNote, { color: textSecondary }]}>Route is a guide only. Flood zones are estimates. Follow instructions from barangay officials and avoid flooded streets.</Text>
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 20 },
   greetRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm, borderBottomWidth: 1 },
   greetSub: { fontWeight: '600', letterSpacing: 1 },
-  greetTitle: { fontWeight: '800', marginTop: 2 },
+  greetTitle: { fontWeight: '700', marginTop: 2 },
   warnBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1.5, borderColor: Colors.warning, backgroundColor: 'rgba(243,156,18,0.08)' },
   warnText: { fontWeight: '700', color: Colors.warning, letterSpacing: 0.5 },
   floodCard: { margin: Spacing.base, borderRadius: Radius.xl, padding: Spacing.base, gap: Spacing.md },
@@ -444,8 +444,8 @@ const styles = StyleSheet.create({
   locationLabelText: { fontSize: 10, color: Colors.textWhite, fontWeight: '600' },
   navigateBtn: { borderRadius: Radius.full, overflow: 'hidden' },
   navigateNote: { fontSize: 10, textAlign: 'center', marginTop: 8, lineHeight: 14 },
-  navigateBtnInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14 },
-  navigateBtnText: { fontWeight: '800', color: Colors.textWhite, letterSpacing: 0.3 },
+  navigateBtnInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: Spacing.base },
+  navigateBtnText: { flexShrink: 1, fontWeight: '700', color: Colors.textWhite, letterSpacing: 0.2 },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
   layerPicker: { borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.base, paddingBottom: 36 },
   pickerHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(150,150,150,0.4)', alignSelf: 'center', marginBottom: 14 },
