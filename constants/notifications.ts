@@ -98,3 +98,13 @@ export async function hasPushRegistration() {
     return false;
   }
 }
+
+/** Removes FloodSense notifications already sitting in the phone's notification tray. */
+export async function clearDeliveredNotifications() {
+  try {
+    if (Platform.OS === 'web') return;
+    await Notifications.dismissAllNotificationsAsync();
+  } catch (error) {
+    console.warn('Could not clear delivered notifications:', error);
+  }
+}

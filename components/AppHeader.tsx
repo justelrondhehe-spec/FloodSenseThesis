@@ -10,7 +10,7 @@ import { useTheme } from '../constants/ThemeContext';
 import { supabase } from '../constants/supabase';
 import { useAlerts } from '../constants/AlertsContext';
 import { ALERT_APPEARANCE, timeAgo } from '../constants/alerts';
-import { hasPushRegistration, registerForPushNotifications, unregisterPushNotifications } from '../constants/notifications';
+import { clearDeliveredNotifications, hasPushRegistration, registerForPushNotifications, unregisterPushNotifications } from '../constants/notifications';
 
 type AppHeaderProps = {
   showBadge?: boolean;
@@ -21,7 +21,7 @@ export default function AppHeader({ showBadge = true }: AppHeaderProps) {
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
-  const { alerts, loading: alertsLoading, error: alertsError, unreadCount, markAllRead, refresh } = useAlerts();
+  const { alerts, loading: alertsLoading, error: alertsError, unreadCount, markAllRead, dismissAlert, clearAll, refresh } = useAlerts();
 
   const { darkMode, setDarkMode, fontSize, setFontSize, unitSystem, setUnitSystem } = useTheme();
 
@@ -36,6 +36,24 @@ export default function AppHeader({ showBadge = true }: AppHeaderProps) {
   useEffect(() => {
     hasPushRegistration().then(setPushEnabled);
   }, []);
+
+  const confirmClearAll = () => {
+    Alert.alert(
+      'Clear all notifications?',
+      'This removes them from this phone only. Other residents are not affected.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear all',
+          style: 'destructive',
+          onPress: () => {
+            clearAll();
+            clearDeliveredNotifications();
+          },
+        },
+      ]
+    );
+  };
 
   const openNotifications = () => {
     setNotifVisible(true);
@@ -127,9 +145,16 @@ export default function AppHeader({ showBadge = true }: AppHeaderProps) {
               <Text style={[styles.sheetTitle, { color: titleColor, fontSize: Fonts.sizes.lg * fontSizeScale }]}>
                 Notifications
               </Text>
-              <TouchableOpacity onPress={() => setNotifVisible(false)}>
-                <Feather name="x" size={22} color={titleColor} />
-              </TouchableOpacity>
+              <View style={styles.sheetActions}>
+                {alerts.length > 0 && (
+                  <TouchableOpacity onPress={confirmClearAll} accessibilityLabel="Clear all notifications">
+                    <Text style={[styles.clearAllText, { fontSize: Fonts.sizes.sm * fontSizeScale }]}>Clear all</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={() => setNotifVisible(false)} accessibilityLabel="Close notifications">
+                  <Feather name="x" size={22} color={titleColor} />
+                </TouchableOpacity>
+              </View>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
@@ -164,6 +189,13 @@ export default function AppHeader({ showBadge = true }: AppHeaderProps) {
                         {timeAgo(n.created_at)}
                       </Text>
                     </View>
+                    <TouchableOpacity
+                      onPress={() => dismissAlert(n.id)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      accessibilityLabel={`Delete notification: ${n.title}`}
+                    >
+                      <Feather name="trash-2" size={18} color={subtitleColor} />
+                    </TouchableOpacity>
                   </View>
                 );
               })}
@@ -351,6 +383,8 @@ const styles = StyleSheet.create({
   sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.base },
   sheetTitle: { fontSize: Fonts.sizes.lg, fontWeight: '800' },
   notifItem: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm, paddingVertical: Spacing.sm, borderBottomWidth: 1 },
+  sheetActions: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  clearAllText: { color: Colors.red, fontWeight: '700' },
   notifIcon: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   notifText: { flex: 1 },
   notifTitle: { fontWeight: '700' },

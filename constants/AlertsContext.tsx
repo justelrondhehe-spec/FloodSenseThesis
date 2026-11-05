@@ -5,6 +5,8 @@ import { FloodAlert, toFloodAlert } from './alerts';
 
 const LAST_SEEN_KEY = 'floodsense_alerts_last_seen';
 const MAX_ALERTS = 50;
+const DISMISSED_KEY = 'floodsense_dismissed_alerts';
+const MAX_DISMISSED = 300;
 
 type AlertsContextType = {
   alerts: FloodAlert[];
@@ -13,6 +15,10 @@ type AlertsContextType = {
   /** Alerts newer than the last time the resident opened the notifications list. */
   unreadCount: number;
   markAllRead: () => void;
+  /** Removes one alert from this phone only (other residents and the database are unaffected). */
+  dismissAlert: (id: string) => void;
+  /** Removes every alert currently shown from this phone only. */
+  clearAll: () => void;
   refresh: () => Promise<void>;
 };
 
@@ -22,6 +28,8 @@ const AlertsContext = createContext<AlertsContextType>({
   error: null,
   unreadCount: 0,
   markAllRead: () => {},
+  dismissAlert: () => {},
+  clearAll: () => {},
   refresh: async () => {},
 });
 
@@ -30,6 +38,8 @@ export function AlertsProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastSeen, setLastSeen] = useState<number>(0);
+  const [dismissed, setDismissed] = useState<string[]>([]);
+  const [dismissedLoaded, setDismissedLoaded] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
 
   // Alerts are only readable by signed-in residents (row level security), so follow the session.
@@ -44,6 +54,22 @@ export function AlertsProvider({ children }: { children: React.ReactNode }) {
       .then((value) => setLastSeen(value ? Number(value) || 0 : 0))
       .catch(() => {});
   }, []);
+
+  // Alerts the resident deleted from this phone stay hidden after the app restarts.
+  useEffect(() => {
+    AsyncStorage.getItem(DISMISSED_KEY)
+      .then((raw) => {
+        const ids = raw ? JSON.parse(raw) : [];
+        if (Array.isArray(ids)) setDismissed(ids.filter((id) => typeof id === 'string'));
+      })
+      .catch(() => {})
+      .finally(() => setDismissedLoaded(true));
+  }, []);
+
+  useEffect(() => {
+    if (!dismissedLoaded) return;
+    AsyncStorage.setItem(DISMISSED_KEY, JSON.stringify(dismissed)).catch(() => {});
+  }, [dismissedLoaded, dismissed]);
 
   const refresh = useCallback(async () => {
     const { data, error: fetchError } = await supabase
@@ -92,14 +118,27 @@ export function AlertsProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.setItem(LAST_SEEN_KEY, String(now)).catch(() => {});
   }, []);
 
+  const visibleAlerts = useMemo(() => {
+    const hidden = new Set(dismissed);
+    return alerts.filter((a) => !hidden.has(a.id));
+  }, [alerts, dismissed]);
+
+  const dismissAlert = useCallback((id: string) => {
+    setDismissed((prev) => (prev.includes(id) ? prev : [id, ...prev].slice(0, MAX_DISMISSED)));
+  }, []);
+
+  const clearAll = useCallback(() => {
+    setDismissed((prev) => Array.from(new Set([...alerts.map((a) => a.id), ...prev])).slice(0, MAX_DISMISSED));
+  }, [alerts]);
+
   const unreadCount = useMemo(
-    () => alerts.filter((a) => new Date(a.created_at).getTime() > lastSeen).length,
-    [alerts, lastSeen]
+    () => visibleAlerts.filter((a) => new Date(a.created_at).getTime() > lastSeen).length,
+    [visibleAlerts, lastSeen]
   );
 
   const value = useMemo(
-    () => ({ alerts, loading, error, unreadCount, markAllRead, refresh }),
-    [alerts, loading, error, unreadCount, markAllRead, refresh]
+    () => ({ alerts: visibleAlerts, loading, error, unreadCount, markAllRead, dismissAlert, clearAll, refresh }),
+    [visibleAlerts, loading, error, unreadCount, markAllRead, dismissAlert, clearAll, refresh]
   );
 
   return <AlertsContext.Provider value={value}>{children}</AlertsContext.Provider>;

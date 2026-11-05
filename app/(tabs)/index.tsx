@@ -78,7 +78,7 @@ function WaterLevelWidget({ unitSystem, level, scaleMax }: { unitSystem: string;
   );
 }
 
-function AlertItem({ alert, cardBg, textSecondary }: { alert: FloodAlert; cardBg: string; textSecondary: string; }) {
+function AlertItem({ alert, cardBg, textSecondary, onDelete }: { alert: FloodAlert; cardBg: string; textSecondary: string; onDelete: () => void; }) {
   const { color, icon } = ALERT_APPEARANCE[alert.type];
 
   return (
@@ -94,6 +94,13 @@ function AlertItem({ alert, cardBg, textSecondary }: { alert: FloodAlert; cardBg
           <Text style={[styles.alertTimeText, { color: textSecondary }]}> {timeAgo(alert.created_at)}</Text>
         </View>
       </View>
+      <TouchableOpacity
+        onPress={onDelete}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        accessibilityLabel={`Delete alert: ${alert.title}`}
+      >
+        <Feather name="trash-2" size={16} color={textSecondary} />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -107,7 +114,7 @@ export default function HomeScreen() {
   const [pickerVisible, setPickerVisible] = useState(false);
 
   // --- ALERTS & NOTIFICATIONS STATE ---
-  const { alerts: recentAlerts, loading: alertsLoading, error: alertsError, unreadCount } = useAlerts();
+  const { alerts: recentAlerts, loading: alertsLoading, error: alertsError, unreadCount, dismissAlert } = useAlerts();
   const [showStatusPopup, setShowStatusPopup] = useState(false);
   const prevStatusRef = useRef<string | null>(null);
 
@@ -338,7 +345,7 @@ export default function HomeScreen() {
             </Text>
           )}
           {recentAlerts.slice(0, 5).map((alert) => (
-            <AlertItem key={alert.id} alert={alert} cardBg={cardBg} textSecondary={textSecondary} />
+            <AlertItem key={alert.id} alert={alert} cardBg={cardBg} textSecondary={textSecondary} onDelete={() => dismissAlert(alert.id)} />
           ))}
         </View>
 
