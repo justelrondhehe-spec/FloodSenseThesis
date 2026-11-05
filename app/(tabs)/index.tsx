@@ -58,8 +58,8 @@ const EVAC_AREAS: EvacArea[] = [
 // ---------------------------------------------------------------------------
 // level is in cm, or null when no sensor is reporting. scaleMax is the level (cm) that fills the gauge.
 function WaterLevelWidget({ unitSystem, level, scaleMax }: { unitSystem: string; level: number | null; scaleMax: number }) {
-  const displayLevel = level === null ? '--' : unitSystem === 'imperial' ? (level * 0.0328084).toFixed(2) : (level / 100).toFixed(2);
-  const unitLabel = unitSystem === 'imperial' ? 'feet' : 'meters';
+  const displayLevel = level === null ? '--' : unitSystem === 'imperial' ? (level * 0.0328084).toFixed(2) : level.toFixed(1);
+  const unitLabel = unitSystem === 'imperial' ? 'feet' : 'cm';
   const fillPercentage = level === null ? 0 : Math.min(Math.max((level / scaleMax) * 100, 10), 100);
 
   return (
