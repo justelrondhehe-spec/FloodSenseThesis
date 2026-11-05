@@ -70,6 +70,11 @@ export const LEAFLET_HTML = `<!DOCTYPE html>
     html, body, #map { height: 100%; margin: 0; padding: 0; }
     /* Fixed-size canvas: the icon is at its exact centre, which is the map coordinate (iconAnchor = centre).
        The label is absolutely positioned, so its text can never move the icon. */
+    /* Map credit: no background, plain white text with a black outline so it reads on any map style. */
+    .leaflet-control-attribution { background: transparent !important; box-shadow: none !important; border: 0 !important;
+      color: #fff !important; font: 10px/1.4 sans-serif; padding: 0 6px 2px;
+      text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 3px #000; }
+    .leaflet-control-attribution a { color: #fff !important; text-decoration: none !important; }
     .pin { position: relative; width: 96px; height: 84px; }
     .pin-dot { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); box-sizing: border-box;
       border-radius: 50%; border: 2px solid rgba(255,255,255,0.75); display: flex; align-items: center; justify-content: center; }
@@ -84,7 +89,8 @@ export const LEAFLET_HTML = `<!DOCTYPE html>
     var LAYERS = ${JSON.stringify(LEAFLET_LAYERS)};
     var ICONS = ${JSON.stringify(ICON_SVG)};
 
-    var map = L.map('map', { maxZoom: 19 }).setView(${JSON.stringify(INITIAL_CENTER)}, 16);
+    var map = L.map('map', { maxZoom: 19, attributionControl: false }).setView(${JSON.stringify(INITIAL_CENTER)}, 16);
+    L.control.attribution({ position: 'bottomright', prefix: '<a href="https://leafletjs.com">Leaflet</a>' }).addTo(map);
     var tileGroup = L.layerGroup().addTo(map);
     var overlay = L.layerGroup().addTo(map);
     var currentLayer = null;
